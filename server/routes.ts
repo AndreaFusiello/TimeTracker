@@ -7,6 +7,12 @@ import { z } from "zod";
 
 // Simple auth middleware for local users
 function requireAuth(req: any, res: any, next: any) {
+  console.log("requireAuth middleware:", {
+    hasReplit: !!(req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub),
+    hasLocal: !!req.session?.localUser,
+    path: req.path
+  });
+  
   // Check for Replit auth first
   if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
     return next();
@@ -18,6 +24,7 @@ function requireAuth(req: any, res: any, next: any) {
     return next();
   }
   
+  console.log("Auth failed for path:", req.path);
   return res.status(401).json({ message: "Unauthorized" });
 }
 
@@ -372,7 +379,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = user.id;
       }
       
+      console.log("User management access attempt:", { user: user?.username, role: user?.role });
+      
       if (!user || user.role !== 'admin') {
+        console.log("Access denied - user role:", user?.role);
         return res.status(403).json({ message: "Access denied" });
       }
 
