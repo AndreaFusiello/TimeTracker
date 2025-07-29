@@ -33,7 +33,8 @@ export const activityTypeEnum = pgEnum('activity_type', [
   'RIP.NDE - MT/PT',
   'RIP.NDE - UT',
   'ISPEZIONE WI',
-  'RIP.ISPEZIONE WI'
+  'RIP.ISPEZIONE WI',
+  'DOCUMENTAZIONE'
 ]);
 
 // User storage table.

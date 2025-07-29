@@ -97,7 +97,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkHoursByUser(userId: string, startDate?: Date, endDate?: Date): Promise<WorkHoursWithUser[]> {
-    let query = db
+    const conditions = [eq(workHours.userId, userId)];
+    
+    if (startDate) {
+      conditions.push(gte(workHours.workDate, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(workHours.workDate, endDate));
+    }
+
+    const results = await db
       .select({
         id: workHours.id,
         userId: workHours.userId,
@@ -125,16 +134,9 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workHours)
       .innerJoin(users, eq(workHours.userId, users.id))
-      .where(eq(workHours.userId, userId));
-
-    if (startDate) {
-      query = query.where(and(eq(workHours.userId, userId), gte(workHours.workDate, startDate)));
-    }
-    if (endDate) {
-      query = query.where(and(eq(workHours.userId, userId), lte(workHours.workDate, endDate)));
-    }
-
-    const results = await query.orderBy(desc(workHours.workDate));
+      .where(and(...conditions))
+      .orderBy(desc(workHours.workDate));
+      
     return results.map(result => ({
       ...result,
       user: result.user
@@ -200,6 +202,23 @@ export class DatabaseStorage implements IStorage {
     activityType?: string;
     jobNumber?: string;
   }): Promise<WorkHoursWithUser[]> {
+    const conditions = [];
+    if (filters?.startDate) {
+      conditions.push(gte(workHours.workDate, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(workHours.workDate, filters.endDate));
+    }
+    if (filters?.userId) {
+      conditions.push(eq(workHours.userId, filters.userId));
+    }
+    if (filters?.activityType) {
+      conditions.push(eq(workHours.activityType, filters.activityType as any));
+    }
+    if (filters?.jobNumber) {
+      conditions.push(eq(workHours.jobNumber, filters.jobNumber));
+    }
+
     let query = db
       .select({
         id: workHours.id,
@@ -228,23 +247,6 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workHours)
       .innerJoin(users, eq(workHours.userId, users.id));
-
-    const conditions = [];
-    if (filters?.startDate) {
-      conditions.push(gte(workHours.workDate, filters.startDate));
-    }
-    if (filters?.endDate) {
-      conditions.push(lte(workHours.workDate, filters.endDate));
-    }
-    if (filters?.userId) {
-      conditions.push(eq(workHours.userId, filters.userId));
-    }
-    if (filters?.activityType) {
-      conditions.push(eq(workHours.activityType, filters.activityType as any));
-    }
-    if (filters?.jobNumber) {
-      conditions.push(eq(workHours.jobNumber, filters.jobNumber));
-    }
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));

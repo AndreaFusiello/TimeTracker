@@ -29,7 +29,8 @@ const formSchema = z.object({
     'RIP.NDE - MT/PT',
     'RIP.NDE - UT',
     'ISPEZIONE WI',
-    'RIP.ISPEZIONE WI'
+    'RIP.ISPEZIONE WI',
+    'DOCUMENTAZIONE'
   ], { required_error: "Seleziona un tipo di attività" }),
   repairCompany: z.string().optional(),
   hoursWorked: z.string().min(1, "Le ore lavorate sono obbligatorie")
@@ -49,6 +50,7 @@ const activityTypes = [
   { value: 'RIP.NDE - UT', label: 'RIP.NDE - UT' },
   { value: 'ISPEZIONE WI', label: 'ISPEZIONE WI' },
   { value: 'RIP.ISPEZIONE WI', label: 'RIP.ISPEZIONE WI' },
+  { value: 'DOCUMENTAZIONE', label: 'DOCUMENTAZIONE' },
 ];
 
 export default function HoursEntryForm({ user }: HoursEntryFormProps) {
@@ -72,8 +74,8 @@ export default function HoursEntryForm({ user }: HoursEntryFormProps) {
     mutationFn: async (data: FormData) => {
       const payload = {
         ...data,
-        workDate: new Date(data.workDate).toISOString(),
-        hoursWorked: data.hoursWorked,
+        workDate: data.workDate, // Send as string, backend will convert
+        hoursWorked: parseFloat(data.hoursWorked).toString(),
       };
       await apiRequest("POST", "/api/work-hours", payload);
     },

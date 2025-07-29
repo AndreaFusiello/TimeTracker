@@ -33,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const workHoursData = insertWorkHoursSchema.parse({
         ...req.body,
+        workDate: new Date(req.body.workDate),
         userId,
         operatorName: `${user.firstName} ${user.lastName}`.trim() || user.email,
       });

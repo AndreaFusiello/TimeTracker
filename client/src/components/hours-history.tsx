@@ -21,7 +21,8 @@ const activityTypes = [
   'RIP.NDE - MT/PT',
   'RIP.NDE - UT',
   'ISPEZIONE WI',
-  'RIP.ISPEZIONE WI'
+  'RIP.ISPEZIONE WI',
+  'DOCUMENTAZIONE'
 ];
 
 export default function HoursHistory({ user }: HoursHistoryProps) {
@@ -38,13 +39,16 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
 
   const { data: workHours, isLoading } = useQuery({
     queryKey: ["/api/work-hours", filters],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
-      return fetch(`/api/work-hours?${params}`, { credentials: "include" })
-        .then(res => res.json());
+      const response = await fetch(`/api/work-hours?${params}`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      return response.json();
     },
   });
 
