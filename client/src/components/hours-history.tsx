@@ -32,9 +32,9 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
-    activityType: "",
+    activityType: "all",
     jobNumber: "",
-    operatorId: "",
+    operatorId: "all",
   });
 
   const { data: workHours, isLoading } = useQuery({
@@ -42,7 +42,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value && value !== "all") params.append(key, value);
       });
       const response = await fetch(`/api/work-hours?${params}`, { credentials: "include" });
       if (!response.ok) {
@@ -97,7 +97,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     try {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value && value !== "all") params.append(key, value);
       });
       
       const response = await fetch(`/api/export/csv?${params}`, { 
@@ -191,12 +191,12 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                     <SelectValue placeholder="Tutti gli operatori" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutti gli operatori</SelectItem>
+                    <SelectItem value="all">Tutti gli operatori</SelectItem>
                     {operators?.map((operator: User) => (
                       <SelectItem key={operator.id} value={operator.id}>
                         {operator.firstName && operator.lastName 
                           ? `${operator.firstName} ${operator.lastName}`
-                          : operator.email
+                          : operator.username || operator.email
                         }
                       </SelectItem>
                     ))}
@@ -214,7 +214,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   <SelectValue placeholder="Tutte le attività" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tutte le attività</SelectItem>
+                  <SelectItem value="all">Tutte le attività</SelectItem>
                   {activityTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
