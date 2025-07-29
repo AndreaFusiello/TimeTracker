@@ -101,6 +101,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createLocalUser(userData: RegisterUser): Promise<User> {
+    // Generate unique email if provided, otherwise set to null
+    const email = userData.email && userData.email.trim() !== '' 
+      ? userData.email 
+      : null;
+
     const [user] = await db
       .insert(users)
       .values({
@@ -108,7 +113,7 @@ export class DatabaseStorage implements IStorage {
         password: userData.password, // In production, hash this!
         firstName: userData.firstName,
         lastName: userData.lastName,
-        email: userData.email && userData.email.trim() !== '' ? userData.email : null,  
+        email: email,  
         role: userData.role,
         authType: 'local'
       })

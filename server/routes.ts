@@ -44,6 +44,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Dati non validi", errors: error.errors });
       }
+      if (error.code === '23505') {
+        if (error.constraint === 'users_email_unique') {
+          return res.status(400).json({ message: "Email già utilizzata" });
+        }
+        if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ message: "Username già esistente" });
+        }
+      }
       res.status(500).json({ message: "Errore nella registrazione" });
     }
   });
