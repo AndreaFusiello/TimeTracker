@@ -61,6 +61,7 @@ export const workHours = pgTable("work_hours", {
   workDate: timestamp("work_date").notNull(),
   jobNumber: varchar("job_number").notNull(),
   jobName: varchar("job_name").notNull(),
+  moduleNumber: varchar("module_number"), // Numero modulo (93, 94, etc.)
   activityType: activityTypeEnum("activity_type").notNull(),
   repairCompany: varchar("repair_company"),
   hoursWorked: decimal("hours_worked", { precision: 4, scale: 2 }).notNull(),

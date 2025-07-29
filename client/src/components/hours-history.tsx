@@ -42,6 +42,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
   const [editForm, setEditForm] = useState({
     workDate: "",
     jobNumber: "",
+    jobName: "",
+    moduleNumber: "",
     activityType: "",
     hoursWorked: "",
     notes: "",
@@ -141,6 +143,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     setEditForm({
       workDate: entry.workDate.toString(),
       jobNumber: entry.jobNumber,
+      jobName: entry.jobName || "",
+      moduleNumber: entry.moduleNumber || "",
       activityType: entry.activityType,
       hoursWorked: entry.hoursWorked.toString(),
       notes: entry.notes || "",
@@ -152,6 +156,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     setEditForm({
       workDate: "",
       jobNumber: "",
+      jobName: "",
+      moduleNumber: "",
       activityType: "",
       hoursWorked: "",
       notes: "",
@@ -166,6 +172,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
       data: {
         workDate: editForm.workDate,
         jobNumber: editForm.jobNumber,
+        jobName: editForm.jobName,
+        moduleNumber: editForm.moduleNumber,
         activityType: editForm.activityType,
         hoursWorked: parseFloat(editForm.hoursWorked),
         notes: editForm.notes,
@@ -225,25 +233,41 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     return user.role === 'admin' || entry.userId === user.id;
   };
 
-  // Calculate summary by job number and activity type
+  // Calculate summary by job number, module number and activity type
   const getHoursSummary = () => {
     if (!workHours || workHours.length === 0) return {};
     
-    const summary: { [key: string]: { [activity: string]: number } } = {};
+    const summary: { [key: string]: { 
+      jobName: string;
+      modules: { [moduleNumber: string]: { [activity: string]: number } };
+      totalHours: number;
+    } } = {};
     
     workHours.forEach((entry: WorkHoursWithUser) => {
       const jobNumber = entry.jobNumber;
+      const jobName = entry.jobName || entry.jobNumber;
+      const moduleNumber = entry.moduleNumber || 'N/A';
       const activityType = entry.activityType;
+      const hours = parseFloat(entry.hoursWorked.toString()) || 0;
       
       if (!summary[jobNumber]) {
-        summary[jobNumber] = {};
+        summary[jobNumber] = {
+          jobName: jobName,
+          modules: {},
+          totalHours: 0
+        };
       }
       
-      if (!summary[jobNumber][activityType]) {
-        summary[jobNumber][activityType] = 0;
+      if (!summary[jobNumber].modules[moduleNumber]) {
+        summary[jobNumber].modules[moduleNumber] = {};
       }
       
-      summary[jobNumber][activityType] += entry.hoursWorked;
+      if (!summary[jobNumber].modules[moduleNumber][activityType]) {
+        summary[jobNumber].modules[moduleNumber][activityType] = 0;
+      }
+      
+      summary[jobNumber].modules[moduleNumber][activityType] += hours;
+      summary[jobNumber].totalHours += hours;
     });
     
     return summary;
@@ -346,28 +370,48 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(hoursSummary).map(([jobNumber, activities]) => (
+                {Object.entries(hoursSummary).map(([jobNumber, jobData]) => (
                   <div key={jobNumber} className="border rounded-lg p-4">
                     <h4 className="font-semibold text-md mb-3 text-primary">
-                      Commessa: {jobNumber}
+                      Commessa: {jobNumber} - {jobData.jobName}
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {Object.entries(activities).map(([activity, hours]) => (
-                        <div key={activity} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                          <span className="text-sm font-medium text-gray-700">
-                            {activity}
-                          </span>
-                          <Badge variant="secondary" className="ml-2">
-                            {hours}h
-                          </Badge>
+                    
+                    {/* Modules breakdown */}
+                    <div className="space-y-3">
+                      {Object.entries(jobData.modules).map(([moduleNumber, activities]) => (
+                        <div key={moduleNumber} className="bg-gray-50 rounded-lg p-3">
+                          <h5 className="font-medium text-sm mb-2 text-gray-800">
+                            {moduleNumber === 'N/A' ? 'Senza Modulo' : `Modulo: ${moduleNumber}`}
+                          </h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {Object.entries(activities).map(([activity, hours]) => (
+                              <div key={activity} className="flex justify-between items-center p-2 bg-white rounded border">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {activity}
+                                </span>
+                                <Badge variant="secondary" className="ml-2">
+                                  {hours.toFixed(1)}h
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-300">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-700">Subtotale Modulo:</span>
+                              <Badge variant="outline" className="text-primary border-primary">
+                                {Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0).toFixed(1)}h
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
+                    
+                    <div className="mt-4 pt-3 border-t-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-gray-900">Totale Commessa:</span>
                         <Badge className="bg-primary text-white">
-                          {Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0)}h
+                          {jobData.totalHours.toFixed(1)}h
                         </Badge>
                       </div>
                     </div>
@@ -380,9 +424,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                     <span className="text-lg font-bold text-gray-900">Totale Generale:</span>
                     <Badge className="bg-primary text-white text-lg px-4 py-2">
                       {Object.values(hoursSummary)
-                        .reduce((total, activities) => 
-                          total + Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0), 0
-                        )}h
+                        .reduce((total, jobData) => total + jobData.totalHours, 0)
+                        .toFixed(1)}h
                     </Badge>
                   </div>
                 </div>
@@ -405,6 +448,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   <TableHead>Data</TableHead>
                   <TableHead>Operatore</TableHead>
                   <TableHead>Commessa</TableHead>
+                  <TableHead>Nome/Acronimo</TableHead>
+                  <TableHead>Modulo</TableHead>
                   <TableHead>Attività</TableHead>
                   <TableHead>Ore</TableHead>
                   <TableHead>Note</TableHead>
@@ -431,6 +476,22 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                             value={editForm.jobNumber}
                             onChange={(e) => setEditForm({ ...editForm, jobNumber: e.target.value })}
                             className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editForm.jobName || ''}
+                            onChange={(e) => setEditForm({ ...editForm, jobName: e.target.value })}
+                            className="w-full"
+                            placeholder="Nome commessa"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editForm.moduleNumber || ''}
+                            onChange={(e) => setEditForm({ ...editForm, moduleNumber: e.target.value })}
+                            className="w-full"
+                            placeholder="93, 94..."
                           />
                         </TableCell>
                         <TableCell>
@@ -495,6 +556,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                         </TableCell>
                         <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>{entry.jobNumber}</TableCell>
+                        <TableCell>{entry.jobName || '-'}</TableCell>
+                        <TableCell>{entry.moduleNumber || '-'}</TableCell>
                         <TableCell>{entry.activityType}</TableCell>
                         <TableCell>{entry.hoursWorked}</TableCell>
                         <TableCell className="max-w-xs truncate" title={entry.notes}>
