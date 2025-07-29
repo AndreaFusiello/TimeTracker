@@ -1,0 +1,297 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { Edit, Trash2, Search, Download } from "lucide-react";
+import type { User, WorkHoursWithUser } from "@shared/schema";
+
+interface HoursHistoryProps {
+  user: User;
+}
+
+const activityTypes = [
+  'NDE-MT/PT',
+  'NDE-UT', 
+  'RIP.NDE - MT/PT',
+  'RIP.NDE - UT',
+  'ISPEZIONE WI',
+  'RIP.ISPEZIONE WI'
+];
+
+export default function HoursHistory({ user }: HoursHistoryProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [filters, setFilters] = useState({
+    startDate: "",
+    endDate: "",
+    activityType: "",
+    jobNumber: "",
+    operatorId: "",
+  });
+
+  const { data: workHours, isLoading } = useQuery({
+    queryKey: ["/api/work-hours", filters],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      return fetch(`/api/work-hours?${params}`, { credentials: "include" })
+        .then(res => res.json());
+    },
+  });
+
+  const { data: operators } = useQuery({
+    queryKey: ["/api/users"],
+    enabled: user.role === 'admin',
+  });
+
+  const deleteHours = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/work-hours/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Registro ore eliminato con successo",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/user"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare il registro ore",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFilter = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
+  };
+
+  const handleExport = async () => {
+    try {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      
+      const response = await fetch(`/api/export/csv?${params}`, { 
+        credentials: "include" 
+      });
+      
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `ore-lavorative-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Successo",
+        description: "Export completato con successo",
+      });
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile esportare i dati",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Sei sicuro di voler eliminare questo registro ore?")) {
+      deleteHours.mutate(id);
+    }
+  };
+
+  const canEdit = (entry: WorkHoursWithUser) => {
+    return user.role === 'admin' || user.role === 'team_leader' || entry.userId === user.id;
+  };
+
+  const canDelete = (entry: WorkHoursWithUser) => {
+    return user.role === 'admin' || entry.userId === user.id;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>Storico Ore Lavorative</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">Visualizza e filtra le ore registrate</p>
+          </div>
+          <Button onClick={handleExport} className="mt-3 sm:mt-0">
+            <Download className="mr-2 h-4 w-4" />
+            Esporta
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {/* Filters */}
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 rounded-t-lg mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data Fine</label>
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              />
+            </div>
+            {user.role === 'admin' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Operatore</label>
+                <Select 
+                  value={filters.operatorId} 
+                  onValueChange={(value) => setFilters({ ...filters, operatorId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tutti gli operatori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tutti gli operatori</SelectItem>
+                    {operators?.map((operator: User) => (
+                      <SelectItem key={operator.id} value={operator.id}>
+                        {operator.firstName && operator.lastName 
+                          ? `${operator.firstName} ${operator.lastName}`
+                          : operator.email
+                        }
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Attività</label>
+              <Select 
+                value={filters.activityType} 
+                onValueChange={(value) => setFilters({ ...filters, activityType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutte le attività" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutte le attività</SelectItem>
+                  {activityTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={handleFilter}>
+              <Search className="mr-2 h-4 w-4" />
+              Filtra
+            </Button>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-600">Caricamento...</p>
+            </div>
+          ) : workHours && workHours.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Operatore</TableHead>
+                  <TableHead>Commessa</TableHead>
+                  <TableHead>Attività</TableHead>
+                  <TableHead>Ore</TableHead>
+                  <TableHead>Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workHours.map((entry: WorkHoursWithUser) => (
+                  <TableRow key={entry.id}>
+                    <TableCell>
+                      {new Date(entry.workDate).toLocaleDateString('it-IT')}
+                    </TableCell>
+                    <TableCell>{entry.operatorName}</TableCell>
+                    <TableCell>{entry.jobNumber}</TableCell>
+                    <TableCell>{entry.activityType}</TableCell>
+                    <TableCell>{entry.hoursWorked}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        {canEdit(entry) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary hover:text-blue-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete(entry) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDelete(entry.id)}
+                            disabled={deleteHours.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nessun registro trovato</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
