@@ -108,7 +108,7 @@ export class DatabaseStorage implements IStorage {
         password: userData.password, // In production, hash this!
         firstName: userData.firstName,
         lastName: userData.lastName,
-        email: userData.email,  
+        email: userData.email && userData.email.trim() !== '' ? userData.email : null,  
         role: userData.role,
         authType: 'local'
       })

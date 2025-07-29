@@ -93,7 +93,7 @@ export const registerSchema = z.object({
   password: z.string().min(4, "Password deve essere almeno 4 caratteri"),
   firstName: z.string().min(1, "Nome richiesto"),
   lastName: z.string().min(1, "Cognome richiesto"),
-  email: z.string().email("Email non valida").optional(),
+  email: z.string().optional().or(z.literal("")),
   role: z.enum(['operator', 'team_leader', 'admin']).default('operator'),
 });
 
