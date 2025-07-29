@@ -189,10 +189,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/work-hours/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/work-hours/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
       const workHours = await storage.getWorkHoursById(req.params.id);
       
       if (!workHours) {
@@ -211,10 +218,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/work-hours/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/work-hours/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
       const workHours = await storage.getWorkHoursById(req.params.id);
       
       if (!workHours) {
@@ -238,10 +252,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/work-hours/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/work-hours/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
       const workHours = await storage.getWorkHoursById(req.params.id);
       
       if (!workHours) {
@@ -302,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Job orders routes
-  app.get("/api/job-orders", isAuthenticated, async (req, res) => {
+  app.get("/api/job-orders", requireAuth, async (req, res) => {
     try {
       const jobOrders = await storage.getJobOrders();
       res.json(jobOrders);
@@ -312,9 +333,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/job-orders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/job-orders", requireAuth, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Access denied" });
@@ -333,9 +361,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes (admin only)
-  app.get("/api/users", isAuthenticated, async (req: any, res) => {
+  app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Access denied" });
@@ -359,9 +394,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
+  app.put("/api/users/:id/role", requireAuth, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Access denied" });
