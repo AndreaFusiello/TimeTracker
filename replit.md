@@ -2,7 +2,7 @@
 
 ## Overview
 
-TimeTracker Pro is a full-stack web application for tracking work hours across different organizational roles. Built for industrial environments with specific activities like NDE inspections and repairs, the application provides role-based access control, comprehensive reporting, and data export capabilities.
+TimeTracker Pro is a full-stack web application for tracking work hours across different organizational roles. Built for industrial environments with specific activities like NDE inspections and repairs, the application provides role-based access control, comprehensive reporting, data export capabilities, and advanced administration features including user management and work hours editing.
 
 ## User Preferences
 
@@ -50,9 +50,9 @@ Preferred communication style: Simple, everyday language.
 - **Navigation**: Tab-based interface with role-specific menu items
 - **Dashboard**: Statistics overview with role-appropriate data
 - **Hours Entry Form**: Validated form with activity type selection and job order tracking
-- **History View**: Filterable table of work hour entries with search capabilities
+- **History View**: Filterable table of work hour entries with search capabilities, inline editing, and detailed summary by job order
 - **Reports**: Export functionality for PDF, CSV, and Excel formats
-- **Admin Panel**: User management and system configuration (admin-only)
+- **Admin Panel**: User management and system configuration (admin-only) with user deletion capabilities
 
 ### Data Models
 ```typescript
@@ -127,5 +127,19 @@ Preferred communication style: Simple, everyday language.
 - **Runtime Error Overlay**: Enhanced error reporting in development
 - **Domain Configuration**: Multi-domain support for authentication flows
 - **Session Management**: Optimized for Replit's hosting environment
+
+## Recent Changes (January 2025)
+
+### Enhanced Administration Features
+- **User Deletion**: Administrators can now delete users (except themselves) with confirmation dialogs
+- **Work Hours Editing**: Administrators and team leaders can edit work hours entries inline in the history table
+- **Enhanced History View**: Added "Notes" column and comprehensive hours summary by job order and activity type
+- **Inline Editing**: Direct table editing with save/cancel actions for seamless user experience
+
+### Technical Improvements
+- **Session Management**: Fixed cookie security settings for development environment
+- **Hybrid Authentication**: Full support for both Replit Auth and local accounts
+- **Role-Based Permissions**: Enhanced permission system for editing and deletion operations
+- **Real-time Updates**: Improved cache invalidation for immediate UI updates
 
 The application is designed for scalability and maintainability, with clear separation of concerns, type safety throughout the stack, and comprehensive error handling for production use.

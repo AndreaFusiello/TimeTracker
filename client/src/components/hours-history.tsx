@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -224,6 +225,32 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     return user.role === 'admin' || entry.userId === user.id;
   };
 
+  // Calculate summary by job number and activity type
+  const getHoursSummary = () => {
+    if (!workHours || workHours.length === 0) return {};
+    
+    const summary: { [key: string]: { [activity: string]: number } } = {};
+    
+    workHours.forEach((entry: WorkHoursWithUser) => {
+      const jobNumber = entry.jobNumber;
+      const activityType = entry.activityType;
+      
+      if (!summary[jobNumber]) {
+        summary[jobNumber] = {};
+      }
+      
+      if (!summary[jobNumber][activityType]) {
+        summary[jobNumber][activityType] = 0;
+      }
+      
+      summary[jobNumber][activityType] += entry.hoursWorked;
+    });
+    
+    return summary;
+  };
+
+  const hoursSummary = getHoursSummary();
+
   return (
     <Card>
       <CardHeader>
@@ -311,6 +338,59 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
           </div>
         </div>
 
+        {/* Hours Summary */}
+        {workHours && workHours.length > 0 && Object.keys(hoursSummary).length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Riepilogo Ore per Commessa</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(hoursSummary).map(([jobNumber, activities]) => (
+                  <div key={jobNumber} className="border rounded-lg p-4">
+                    <h4 className="font-semibold text-md mb-3 text-primary">
+                      Commessa: {jobNumber}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {Object.entries(activities).map(([activity, hours]) => (
+                        <div key={activity} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium text-gray-700">
+                            {activity}
+                          </span>
+                          <Badge variant="secondary" className="ml-2">
+                            {hours}h
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900">Totale Commessa:</span>
+                        <Badge className="bg-primary text-white">
+                          {Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0)}h
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Overall Total */}
+                <div className="border-t-2 border-primary pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Totale Generale:</span>
+                    <Badge className="bg-primary text-white text-lg px-4 py-2">
+                      {Object.values(hoursSummary)
+                        .reduce((total, activities) => 
+                          total + Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0), 0
+                        )}h
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Data Table */}
         <div className="overflow-x-auto">
           {isLoading ? (
@@ -327,6 +407,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   <TableHead>Commessa</TableHead>
                   <TableHead>Attività</TableHead>
                   <TableHead>Ore</TableHead>
+                  <TableHead>Note</TableHead>
                   <TableHead>Azioni</TableHead>
                 </TableRow>
               </TableHeader>
@@ -377,6 +458,14 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                           />
                         </TableCell>
                         <TableCell>
+                          <Input
+                            value={editForm.notes}
+                            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                            placeholder="Note opzionali..."
+                            className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
                           <div className="flex space-x-1">
                             <Button
                               variant="ghost"
@@ -408,6 +497,9 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                         <TableCell>{entry.jobNumber}</TableCell>
                         <TableCell>{entry.activityType}</TableCell>
                         <TableCell>{entry.hoursWorked}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={entry.notes}>
+                          {entry.notes || '-'}
+                        </TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             {canEdit(entry) && (
