@@ -9,6 +9,8 @@ import {
   type WorkHoursWithUser,
   type JobOrder,
   type InsertJobOrder,
+  type RegisterUser,
+  type LoginUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
@@ -19,6 +21,11 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User>;
+  
+  // Local auth operations
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createLocalUser(user: RegisterUser): Promise<User>;
+  authenticateUser(username: string, password: string): Promise<User | null>;
 
   // Work hours operations
   createWorkHours(workHours: InsertWorkHours): Promise<WorkHours>;
@@ -85,6 +92,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  // Local auth operations
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createLocalUser(userData: RegisterUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: userData.username,
+        password: userData.password, // In production, hash this!
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,  
+        role: userData.role,
+        authType: 'local'
+      })
+      .returning();
+    return user;
+  }
+
+  async authenticateUser(username: string, password: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.username, username),
+        eq(users.password, password),
+        eq(users.authType, 'local')
+      ));
+    return user || null;
   }
 
   // Work hours operations

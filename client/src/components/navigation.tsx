@@ -1,6 +1,9 @@
 import { Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 
 interface NavigationProps {
@@ -11,13 +14,40 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user, activeTab, onTabChange, canAccessAdmin }: NavigationProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      // Try local logout first, then Replit logout
+      try {
+        await apiRequest("POST", "/api/auth/logout-local", {});
+      } catch (error) {
+        // If local logout fails, try Replit logout
+        window.location.href = "/api/logout";
+        return;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      window.location.href = "/";
+    },
+    onError: () => {
+      // Fallback to Replit logout
+      window.location.href = "/api/logout";
+    },
+  });
+
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   const getUserInitials = (user: User) => {
     if (user.firstName && user.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    if (user.username) {
+      return user.username.substring(0, 2).toUpperCase();
     }
     if (user.email) {
       return user.email.substring(0, 2).toUpperCase();
@@ -29,7 +59,7 @@ export default function Navigation({ user, activeTab, onTabChange, canAccessAdmi
     if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
-    return user.email || "Utente";
+    return user.username || user.email || "Utente";
   };
 
   const tabs = [

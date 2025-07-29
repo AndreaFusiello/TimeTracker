@@ -2,18 +2,93 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertWorkHoursSchema, insertJobOrderSchema } from "@shared/schema";
+import { insertWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
+
+// Simple auth middleware for local users
+function requireAuth(req: any, res: any, next: any) {
+  // Check for Replit auth first
+  if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+    return next();
+  }
+  
+  // Check for local auth session
+  if (req.session?.localUser) {
+    req.user = { localUser: req.session.localUser };
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Local auth routes
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const userData = registerSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username già esistente" });
+      }
+      
+      const user = await storage.createLocalUser(userData);
+      req.session!.localUser = user;
+      res.json(user);
+    } catch (error) {
+      console.error("Error registering user:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dati non validi", errors: error.errors });
+      }
+      res.status(500).json({ message: "Errore nella registrazione" });
+    }
+  });
+
+  app.post('/api/auth/login-local', async (req, res) => {
+    try {
+      const loginData = loginSchema.parse(req.body);
+      const user = await storage.authenticateUser(loginData.username, loginData.password);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Credenziali non valide" });
+      }
+      
+      req.session!.localUser = user;
+      res.json(user);
+    } catch (error) {
+      console.error("Error logging in user:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dati non validi", errors: error.errors });
+      }
+      res.status(500).json({ message: "Errore nel login" });
+    }
+  });
+
+  app.post('/api/auth/logout-local', async (req, res) => {
+    req.session!.localUser = null;
+    res.json({ message: "Logout effettuato" });
+  });
+
+  // Auth routes (updated to handle both auth types)
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+    try {
+      let user;
+      if (req.user.claims?.sub) {
+        // Replit user
+        user = await storage.getUser(req.user.claims.sub);
+      } else if (req.user.localUser) {
+        // Local user
+        user = req.user.localUser;
+      }
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -22,10 +97,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work hours routes
-  app.post("/api/work-hours", isAuthenticated, async (req: any, res) => {
+  app.post("/api/work-hours", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -35,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         workDate: new Date(req.body.workDate),
         userId,
-        operatorName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+        operatorName: `${user.firstName} ${user.lastName}`.trim() || user.email || user.username,
       });
 
       const workHours = await storage.createWorkHours(workHoursData);
@@ -49,10 +130,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/work-hours", isAuthenticated, async (req: any, res) => {
+  app.get("/api/work-hours", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -167,9 +254,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Statistics routes
-  app.get("/api/stats/user", isAuthenticated, async (req: any, res) => {
+  app.get("/api/stats/user", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      let userId;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+      } else if (req.user.localUser) {
+        userId = req.user.localUser.id;
+      }
       const stats = await storage.getUserHoursStats(userId);
       res.json(stats);
     } catch (error) {
@@ -178,10 +270,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/stats/team", isAuthenticated, async (req: any, res) => {
+  app.get("/api/stats/team", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user || (user.role !== 'team_leader' && user.role !== 'admin')) {
         return res.status(403).json({ message: "Access denied" });
@@ -275,10 +373,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export routes
-  app.get("/api/export/csv", isAuthenticated, async (req: any, res) => {
+  app.get("/api/export/csv", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });

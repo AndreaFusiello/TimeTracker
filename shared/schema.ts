@@ -40,12 +40,15 @@ export const activityTypeEnum = pgEnum('activity_type', [
 // User storage table.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique(),
+  password: varchar("password"), // For local auth
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: roleEnum("role").notNull().default('operator'),
   teamId: varchar("team_id"),
+  authType: varchar("auth_type").notNull().default('replit'), // 'replit' or 'local'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -84,6 +87,21 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+// Local auth schemas
+export const registerSchema = z.object({
+  username: z.string().min(3, "Username deve essere almeno 3 caratteri"),
+  password: z.string().min(4, "Password deve essere almeno 4 caratteri"),
+  firstName: z.string().min(1, "Nome richiesto"),
+  lastName: z.string().min(1, "Cognome richiesto"),
+  email: z.string().email("Email non valida").optional(),
+  role: z.enum(['operator', 'team_leader', 'admin']).default('operator'),
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username richiesto"),
+  password: z.string().min(1, "Password richiesta"),
+});
+
 export const insertWorkHoursSchema = createInsertSchema(workHours).omit({
   id: true,
   createdAt: true,
@@ -103,6 +121,8 @@ export type InsertWorkHours = z.infer<typeof insertWorkHoursSchema>;
 export type WorkHours = typeof workHours.$inferSelect;
 export type InsertJobOrder = z.infer<typeof insertJobOrderSchema>;
 export type JobOrder = typeof jobOrders.$inferSelect;
+export type RegisterUser = z.infer<typeof registerSchema>;
+export type LoginUser = z.infer<typeof loginSchema>;
 
 // Extended work hours with user info for display
 export type WorkHoursWithUser = WorkHours & {
