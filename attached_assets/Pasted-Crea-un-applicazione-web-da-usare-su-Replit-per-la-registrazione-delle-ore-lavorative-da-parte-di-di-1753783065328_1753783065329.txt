@@ -1,0 +1,60 @@
+Crea un'applicazione web da usare su Replit per la registrazione delle ore lavorative da parte di diversi ruoli aziendali: operatori, capisquadra e amministratori. L'app deve essere pensata per **uso interno** all’azienda e includere:
+
+- **Login e autenticazione utenti**, con distinzione di ruoli:
+  - Operatori: possono inserire le proprie ore.
+  - Capisquadra: possono visualizzare e modificare gli inserimenti del proprio team.
+  - Amministratori: possono gestire tutti i dati e gli utenti.
+
+- Una **dashboard centrale** per la gestione e consultazione dei dati.
+
+- Un **form per l’inserimento delle ore** che includa i seguenti campi:
+  - Nome dell'operatore
+  - Data
+  - Numero di commessa
+  - Nome/Acronimo della commessa
+  - Tipo di attività (con menu a tendina):
+    - NDE-MT/PT
+    - NDE-UT
+    - RIP.NDE - MT/PT
+    - RIP.NDE - UT
+    - ISPEZIONE WI
+    - RIP.ISPEZIONE WI
+  - Ditta che ha effettuato la riparazione
+  - Ore lavorate
+  - Note aggiuntive
+
+- Possibilità di **esportare i dati**:
+  - In **PDF** (es. riepilogo giornaliero o settimanale).
+  - In **CSV o Excel** per analisi e backup.
+
+- Sezione "Visualizza storico" con **filtri per data, operatore, tipo di attività, commessa**.
+
+- Sistema di **notifiche o promemoria automatici** per ricordare agli utenti l’inserimento dati giornaliero.
+
+- **Associazione dei dati all’utente autenticato** per tracciabilità.
+
+- Struttura dell’app semplice, ordinata e facilmente navigabile da dispositivi mobili.
+
+- Sicurezza base per protezione dati e accessi.
+
+Obiettivo: raccogliere, archiviare e gestire le ore lavorative degli operatori in modo tracciabile, esportabile e adattato ai diversi livelli di accesso utente.
+
+🔧 IDEE EXTRA DA INTEGRARE (opzionali)
+Grafici riepilogativi per analizzare ore per tipo di attività o per commessa.
+
+Tag di priorità per le commesse (es. “urgente”, “da rivedere”).
+
+Log attività utenti per monitorare chi ha modificato cosa e quando.
+
+Filtro per “ditta riparatrice” con riepilogo attività effettuate.
+
+Esportazione mensile automatica inviata via email agli amministratori.
+
+Firma digitale per capisquadra alla chiusura di una giornata.
+
+Multi-lingua (se usata da team misti o sedi estere).
+
+Modalità dark/light selezionabile dall’utente.
+
+Integrazione con Google Calendar per pianificare interventi e attività.
+
