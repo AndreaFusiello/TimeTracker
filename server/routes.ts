@@ -422,6 +422,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/users/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Cannot delete yourself
+      if (req.params.id === userId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      await storage.deleteUser(req.params.id);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Export routes
   app.get("/api/export/csv", requireAuth, async (req: any, res) => {
     try {

@@ -21,6 +21,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   
   // Local auth operations
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -92,6 +93,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    // First delete all work hours entries for this user
+    await db.delete(workHours).where(eq(workHours.userId, id));
+    // Then delete the user
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // Local auth operations

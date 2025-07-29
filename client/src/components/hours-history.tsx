@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Edit, Trash2, Search, Download } from "lucide-react";
+import { Edit, Trash2, Search, Download, Save, X } from "lucide-react";
 import type { User, WorkHoursWithUser } from "@shared/schema";
 
 interface HoursHistoryProps {
@@ -35,6 +35,15 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     activityType: "all",
     jobNumber: "",
     operatorId: "all",
+  });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    workDate: "",
+    jobNumber: "",
+    activityType: "",
+    hoursWorked: "",
+    notes: "",
   });
 
   const { data: workHours, isLoading } = useQuery({
@@ -89,8 +98,82 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     },
   });
 
+  const updateHours = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      await apiRequest("PUT", `/api/work-hours/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Ore lavorative aggiornate con successo",
+      });
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/user"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare le ore lavorative",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFilter = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
+  };
+
+  const startEdit = (entry: WorkHoursWithUser) => {
+    setEditingId(entry.id);
+    setEditForm({
+      workDate: entry.workDate.toString(),
+      jobNumber: entry.jobNumber,
+      activityType: entry.activityType,
+      hoursWorked: entry.hoursWorked.toString(),
+      notes: entry.notes || "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({
+      workDate: "",
+      jobNumber: "",
+      activityType: "",
+      hoursWorked: "",
+      notes: "",
+    });
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    
+    updateHours.mutate({
+      id: editingId,
+      data: {
+        workDate: editForm.workDate,
+        jobNumber: editForm.jobNumber,
+        activityType: editForm.activityType,
+        hoursWorked: parseFloat(editForm.hoursWorked),
+        notes: editForm.notes,
+      },
+    });
+  };
+
+  const canEdit = (entry: WorkHoursWithUser) => {
+    return user.role === 'admin' || user.role === 'team_leader' || entry.userId === user.id;
   };
 
   const handleExport = async () => {
@@ -135,10 +218,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     if (confirm("Sei sicuro di voler eliminare questo registro ore?")) {
       deleteHours.mutate(id);
     }
-  };
-
-  const canEdit = (entry: WorkHoursWithUser) => {
-    return user.role === 'admin' || user.role === 'team_leader' || entry.userId === user.id;
   };
 
   const canDelete = (entry: WorkHoursWithUser) => {
@@ -254,37 +333,108 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
               <TableBody>
                 {workHours.map((entry: WorkHoursWithUser) => (
                   <TableRow key={entry.id}>
-                    <TableCell>
-                      {new Date(entry.workDate).toLocaleDateString('it-IT')}
-                    </TableCell>
-                    <TableCell>{entry.operatorName}</TableCell>
-                    <TableCell>{entry.jobNumber}</TableCell>
-                    <TableCell>{entry.activityType}</TableCell>
-                    <TableCell>{entry.hoursWorked}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {canEdit(entry) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary hover:text-blue-900"
+                    {editingId === entry.id ? (
+                      // Edit mode
+                      <>
+                        <TableCell>
+                          <Input
+                            type="date"
+                            value={editForm.workDate}
+                            onChange={(e) => setEditForm({ ...editForm, workDate: e.target.value })}
+                            className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>{entry.operatorName}</TableCell>
+                        <TableCell>
+                          <Input
+                            value={editForm.jobNumber}
+                            onChange={(e) => setEditForm({ ...editForm, jobNumber: e.target.value })}
+                            className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={editForm.activityType} 
+                            onValueChange={(value) => setEditForm({ ...editForm, activityType: value })}
                           >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete(entry) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-900"
-                            onClick={() => handleDelete(entry.id)}
-                            disabled={deleteHours.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activityTypes.map((type) => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.5"
+                            value={editForm.hoursWorked}
+                            onChange={(e) => setEditForm({ ...editForm, hoursWorked: e.target.value })}
+                            className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveEdit}
+                              disabled={updateHours.isPending}
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              <Save className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEdit}
+                              className="text-gray-600 hover:text-gray-900"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      // View mode
+                      <>
+                        <TableCell>
+                          {new Date(entry.workDate).toLocaleDateString('it-IT')}
+                        </TableCell>
+                        <TableCell>{entry.operatorName}</TableCell>
+                        <TableCell>{entry.jobNumber}</TableCell>
+                        <TableCell>{entry.activityType}</TableCell>
+                        <TableCell>{entry.hoursWorked}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            {canEdit(entry) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(entry)}
+                                className="text-primary hover:text-blue-900"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete(entry) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-900"
+                                onClick={() => handleDelete(entry.id)}
+                                disabled={deleteHours.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

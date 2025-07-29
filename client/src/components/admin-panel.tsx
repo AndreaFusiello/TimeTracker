@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { UserPlus, Edit, UserX, Save } from "lucide-react";
+import { UserPlus, Edit, UserX, Save, Trash2 } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface AdminPanelProps {
@@ -63,8 +63,45 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", `/api/users/${userId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Utente eliminato con successo",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare l'utente",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRoleChange = (userId: string, newRole: string) => {
     updateUserRole.mutate({ userId, role: newRole });
+  };
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (confirm(`Sei sicuro di voler eliminare l'utente "${userName}"? Questa azione non può essere annullata e verranno eliminate anche tutte le sue ore lavorative.`)) {
+      deleteUser.mutate(userId);
+    }
   };
 
   const handleSaveSettings = () => {
@@ -205,6 +242,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteUser(userItem.id, getUserDisplayName(userItem))}
+                            className="text-destructive hover:text-destructive"
+                            disabled={userItem.id === user.id || deleteUser.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
