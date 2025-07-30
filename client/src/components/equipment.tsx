@@ -291,9 +291,9 @@ export default function Equipment({ user }: EquipmentProps) {
       // Model field only for UT instruments and probes
       model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
       // Probe-specific fields only for UT probes
-      angle: data.equipmentType === 'ut_probe' ? data.angle : undefined,
-      frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
-      dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
+      angle: data.equipmentType === 'ut_probe' ? (data.angle || null) : null,
+      frequency: data.equipmentType === 'ut_probe' ? (data.frequency || null) : null,
+      dimension: data.equipmentType === 'ut_probe' ? (data.dimension || null) : null,
     };
 
     // Handle calibration expiry - null for UT probes, date string for others

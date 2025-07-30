@@ -503,6 +503,9 @@ export class DatabaseStorage implements IStorage {
         model: equipmentData.model,
         internalSerialNumber: equipmentData.internalSerialNumber,
         serialNumber: equipmentData.serialNumber,
+        angle: equipmentData.angle,
+        frequency: equipmentData.frequency,
+        dimension: equipmentData.dimension,
         calibrationExpiry: equipmentData.calibrationExpiry,
         assignedOperatorId: equipmentData.assignedOperatorId,
         status: equipmentData.status,
@@ -522,6 +525,9 @@ export class DatabaseStorage implements IStorage {
         model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
+        angle: equipment.angle,
+        frequency: equipment.frequency,
+        dimension: equipment.dimension,
         calibrationExpiry: equipment.calibrationExpiry,
         assignedOperatorId: equipment.assignedOperatorId,
         status: equipment.status,
@@ -551,6 +557,9 @@ export class DatabaseStorage implements IStorage {
         model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
+        angle: equipment.angle,
+        frequency: equipment.frequency,
+        dimension: equipment.dimension,
         calibrationExpiry: equipment.calibrationExpiry,
         assignedOperatorId: equipment.assignedOperatorId,
         status: equipment.status,
@@ -586,6 +595,9 @@ export class DatabaseStorage implements IStorage {
     if (updates.model !== undefined) updateData.model = updates.model;
     if (updates.internalSerialNumber !== undefined) updateData.internalSerialNumber = updates.internalSerialNumber;
     if (updates.serialNumber !== undefined) updateData.serialNumber = updates.serialNumber;
+    if (updates.angle !== undefined) updateData.angle = updates.angle;
+    if (updates.frequency !== undefined) updateData.frequency = updates.frequency;
+    if (updates.dimension !== undefined) updateData.dimension = updates.dimension;
     if (updates.calibrationExpiry !== undefined) updateData.calibrationExpiry = updates.calibrationExpiry;
     if (updates.assignedOperatorId !== undefined) updateData.assignedOperatorId = updates.assignedOperatorId;
     if (updates.status !== undefined) updateData.status = updates.status;
