@@ -149,7 +149,7 @@ export const equipment = pgTable("equipment", {
   angle: varchar("angle"), // Angle for UT probes (e.g., "45°", "60°")
   frequency: varchar("frequency"), // Frequency for UT probes (e.g., "2.25MHz", "5MHz")
   dimension: varchar("dimension"), // Dimension for UT probes (e.g., "10mm", "20mm")
-  calibrationExpiry: timestamp("calibration_expiry").notNull(),
+  calibrationExpiry: timestamp("calibration_expiry"), // Not required for UT probes
   assignedOperatorId: varchar("assigned_operator_id").references(() => users.id),
   status: varchar("status").notNull().default("active"), // active, maintenance, retired
   calibrationCertificate: varchar("calibration_certificate"), // File path for calibration certificate
@@ -163,7 +163,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  calibrationExpiry: z.string().min(1, "Data di calibrazione richiesta"),
+  calibrationExpiry: z.string().optional(), // Optional for UT probes
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),

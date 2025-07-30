@@ -22,11 +22,20 @@ interface EquipmentProps {
 }
 
 const equipmentFormSchema = insertEquipmentSchema.extend({
-  calibrationExpiry: z.string().min(1, "La data di scadenza calibrazione è obbligatoria"),
+  calibrationExpiry: z.string().optional(),
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),
   dimension: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Calibration expiry is required for MT and UT instruments, but not for UT probes
+  if (data.equipmentType !== 'ut_probe' && (!data.calibrationExpiry || data.calibrationExpiry === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "La data di scadenza calibrazione è obbligatoria per questo tipo di attrezzatura",
+      path: ['calibrationExpiry'],
+    });
+  }
 });
 
 export default function Equipment({ user }: EquipmentProps) {
@@ -277,8 +286,12 @@ export default function Equipment({ user }: EquipmentProps) {
   const onSubmit = (data: z.infer<typeof equipmentFormSchema>) => {
     const equipmentData: InsertEquipment = {
       ...data,
-      calibrationExpiry: data.calibrationExpiry,
+      calibrationExpiry: data.equipmentType === 'ut_probe' ? undefined : data.calibrationExpiry,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
+      // Ensure probe-specific fields are properly included
+      angle: data.equipmentType === 'ut_probe' ? data.angle : undefined,
+      frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
+      dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
     };
 
     if (editingEquipment) {
@@ -299,7 +312,7 @@ export default function Equipment({ user }: EquipmentProps) {
       angle: equipment.angle || "",
       frequency: equipment.frequency || "",
       dimension: equipment.dimension || "",
-      calibrationExpiry: new Date(equipment.calibrationExpiry).toISOString().split('T')[0],
+      calibrationExpiry: equipment.calibrationExpiry ? new Date(equipment.calibrationExpiry).toISOString().split('T')[0] : "",
       assignedOperatorId: equipment.assignedOperatorId || "unassigned",
       status: equipment.status,
     });
@@ -528,19 +541,21 @@ export default function Equipment({ user }: EquipmentProps) {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="calibrationExpiry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Scadenza Calibrazione</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {form.watch("equipmentType") !== "ut_probe" && (
+                      <FormField
+                        control={form.control}
+                        name="calibrationExpiry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Scadenza Calibrazione</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     <FormField
                       control={form.control}
@@ -548,7 +563,7 @@ export default function Equipment({ user }: EquipmentProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Operatore Assegnato</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || "unassigned"}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Seleziona operatore" />
@@ -560,7 +575,7 @@ export default function Equipment({ user }: EquipmentProps) {
                                 <SelectItem key={operator.id} value={operator.id}>
                                   {operator.firstName && operator.lastName 
                                     ? `${operator.firstName} ${operator.lastName}`
-                                    : operator.username || operator.email
+                                    : operator.username || operator.email || 'Operatore'
                                   }
                                 </SelectItem>
                               ))}
@@ -777,14 +792,18 @@ export default function Equipment({ user }: EquipmentProps) {
                       <TableCell>{equipment.frequency || '-'}</TableCell>
                       <TableCell>{equipment.dimension || '-'}</TableCell>
                       <TableCell>
-                        <div className="flex items-center">
-                          {isCalibrationExpiring(equipment.calibrationExpiry) && (
-                            <AlertTriangle className="h-4 w-4 text-orange-500 mr-1" />
-                          )}
-                          <span className={isCalibrationExpiring(equipment.calibrationExpiry) ? "text-orange-600 font-medium" : ""}>
-                            {new Date(equipment.calibrationExpiry).toLocaleDateString('it-IT')}
-                          </span>
-                        </div>
+                        {equipment.calibrationExpiry ? (
+                          <div className="flex items-center">
+                            {isCalibrationExpiring(equipment.calibrationExpiry) && (
+                              <AlertTriangle className="h-4 w-4 text-orange-500 mr-1" />
+                            )}
+                            <span className={isCalibrationExpiring(equipment.calibrationExpiry) ? "text-orange-600 font-medium" : ""}>
+                              {new Date(equipment.calibrationExpiry).toLocaleDateString('it-IT')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Non richiesta</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {equipment.assignedOperator ? 

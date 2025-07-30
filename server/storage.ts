@@ -191,12 +191,15 @@ export class DatabaseStorage implements IStorage {
         updatedAt: workHours.updatedAt,
         user: {
           id: users.id,
+          username: users.username,
+          password: users.password,
           email: users.email,
           firstName: users.firstName,
           lastName: users.lastName,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
           teamId: users.teamId,
+          authType: users.authType,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         }
@@ -230,12 +233,15 @@ export class DatabaseStorage implements IStorage {
         updatedAt: workHours.updatedAt,
         user: {
           id: users.id,
+          username: users.username,
+          password: users.password,
           email: users.email,
           firstName: users.firstName,
           lastName: users.lastName,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
           teamId: users.teamId,
+          authType: users.authType,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         }
