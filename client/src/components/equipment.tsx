@@ -288,7 +288,9 @@ export default function Equipment({ user }: EquipmentProps) {
       ...data,
       calibrationExpiry: data.equipmentType === 'ut_probe' ? undefined : data.calibrationExpiry,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
-      // Ensure probe-specific fields are properly included
+      // Model field only for UT instruments and probes
+      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
+      // Probe-specific fields only for UT probes
       angle: data.equipmentType === 'ut_probe' ? data.angle : undefined,
       frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
       dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
@@ -453,19 +455,21 @@ export default function Equipment({ user }: EquipmentProps) {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Modello</FormLabel>
-                          <FormControl>
-                            <Input placeholder="es. 38DL PLUS, EPOCH 6LT, 5L64..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {(form.watch("equipmentType") === "ultrasonic_instrument" || form.watch("equipmentType") === "ut_probe") && (
+                      <FormField
+                        control={form.control}
+                        name="model"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Modello</FormLabel>
+                            <FormControl>
+                              <Input placeholder="es. 38DL PLUS, EPOCH 6LT, 5L64..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     {form.watch("equipmentType") === "ut_probe" && (
                       <>
