@@ -145,6 +145,37 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     },
   });
 
+  const updateUserStatus = useMutation({
+    mutationFn: async ({ userId, enabled }: { userId: string; enabled: boolean }) => {
+      await apiRequest("PUT", `/api/users/${userId}/status`, { enabled });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Stato utente aggiornato con successo",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato dell'utente",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRoleChange = (userId: string, newRole: string) => {
     updateUserRole.mutate({ userId, role: newRole });
   };
@@ -152,6 +183,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const handleDeleteUser = (userId: string, userName: string) => {
     if (confirm(`Sei sicuro di voler eliminare l'utente "${userName}"? Questa azione non può essere annullata e verranno eliminate anche tutte le sue ore lavorative.`)) {
       deleteUser.mutate(userId);
+    }
+  };
+
+  const handleToggleUserStatus = (userId: string, currentStatus: boolean, userName: string) => {
+    const action = currentStatus ? 'disabilitare' : 'abilitare';
+    if (confirm(`Sei sicuro di voler ${action} l'utente "${userName}"?`)) {
+      updateUserStatus.mutate({ userId, enabled: !currentStatus });
     }
   };
 
@@ -417,9 +455,16 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                         }
                       </TableCell>
                       <TableCell>
-                        <Badge variant="default" className="bg-green-100 text-green-800">
-                          Attivo
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={userItem.enabled ?? true}
+                            onCheckedChange={() => handleToggleUserStatus(userItem.id, userItem.enabled ?? true, getUserDisplayName(userItem))}
+                            disabled={userItem.id === user.id || updateUserStatus.isPending}
+                          />
+                          <span className="text-sm">
+                            {userItem.enabled ?? true ? 'Abilitato' : 'Disabilitato'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

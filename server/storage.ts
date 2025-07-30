@@ -24,6 +24,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User>;
+  updateUserStatus(id: string, enabled: boolean): Promise<User>;
   deleteUser(id: string): Promise<void>;
   
   // Local auth operations
@@ -104,6 +105,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ role: role as any, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserStatus(id: string, enabled: boolean): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ enabled, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;

@@ -8,6 +8,7 @@ import {
   text,
   decimal,
   pgEnum,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -49,6 +50,7 @@ export const users = pgTable("users", {
   role: roleEnum("role").notNull().default('operator'),
   teamId: varchar("team_id"),
   authType: varchar("auth_type").notNull().default('replit'), // 'replit' or 'local'
+  enabled: boolean("enabled").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

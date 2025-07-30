@@ -39,6 +39,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Credenziali non valide" });
       }
       
+      // Check if user is enabled
+      if (!user.enabled) {
+        return res.status(401).json({ message: "Account disabilitato. Contatta l'amministratore." });
+      }
+      
       (req.session as any).localUser = user;
       res.json(user);
     } catch (error) {
@@ -69,6 +74,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user is enabled (for local users)
+      if (req.user.localUser && !user.enabled) {
+        return res.status(401).json({ message: "Account disabilitato. Contatta l'amministratore." });
       }
       
       res.json(user);
@@ -816,6 +826,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error downloading file:", error);
       res.status(500).json({ message: "Failed to download file" });
+    }
+  });
+
+  // User management routes for admin/team leaders
+  app.put("/api/users/:id/status", requireAuth, async (req: any, res) => {
+    try {
+      let currentUser;
+      if (req.user.claims?.sub) {
+        const userId = req.user.claims.sub;
+        currentUser = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        currentUser = req.user.localUser;
+      }
+
+      // Only admins and team leaders can enable/disable users
+      if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid enabled status" });
+      }
+
+      const updatedUser = await storage.updateUserStatus(req.params.id, enabled);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      res.status(500).json({ message: "Failed to update user status" });
     }
   });
 
