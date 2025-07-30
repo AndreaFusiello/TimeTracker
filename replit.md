@@ -149,7 +149,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Equipment Management System (July 2025)
 - **NDT Equipment Tracking**: Full equipment management system for non-destructive testing tools
-- **Dual Equipment Types**: Support for both MT (Magnetoscopia) and UT (Ultrasuoni) equipment with:
+- **Triple Equipment Types**: Support for MT (Magnetoscopia), UT (Ultrasuoni), and UT Probes equipment with:
   - Brand and model information (model field especially for ultrasonic instruments)
   - Internal serial number and manufacturer serial number
   - Calibration expiry dates with warning system (30-day alerts)

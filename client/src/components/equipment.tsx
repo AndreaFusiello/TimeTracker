@@ -307,6 +307,8 @@ export default function Equipment({ user }: EquipmentProps) {
         return 'MT';
       case 'ultrasonic_instrument':
         return 'UT';
+      case 'ut_probe':
+        return 'Sonda UT';
       default:
         return type;
     }
@@ -319,7 +321,7 @@ export default function Equipment({ user }: EquipmentProps) {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Attrezzature NDT</h1>
-          <p className="text-gray-600">Controlli non distruttivi - Attrezzature MT e UT</p>
+          <p className="text-gray-600">Controlli non distruttivi - Attrezzature MT, UT e Sonde</p>
         </div>
         {canManageEquipment && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -359,6 +361,7 @@ export default function Equipment({ user }: EquipmentProps) {
                             <SelectContent>
                               <SelectItem value="magnetic_yoke">MT - Magnetoscopia</SelectItem>
                               <SelectItem value="ultrasonic_instrument">UT - Ultrasuoni</SelectItem>
+                              <SelectItem value="ut_probe">Sonda UT</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -373,7 +376,7 @@ export default function Equipment({ user }: EquipmentProps) {
                         <FormItem>
                           <FormLabel>Marca</FormLabel>
                           <FormControl>
-                            <Input placeholder="es. Magnaflux, Olympus..." {...field} />
+                            <Input placeholder="es. Magnaflux, Olympus, GE..." {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -387,7 +390,7 @@ export default function Equipment({ user }: EquipmentProps) {
                         <FormItem>
                           <FormLabel>Modello</FormLabel>
                           <FormControl>
-                            <Input placeholder="es. 38DL PLUS, EPOCH 6LT..." {...field} />
+                            <Input placeholder="es. 38DL PLUS, EPOCH 6LT, 5L64..." {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
