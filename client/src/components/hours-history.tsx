@@ -111,8 +111,20 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
         description: "Ore lavorative aggiornate con successo",
       });
       setEditingId(null);
+      // Reset form
+      setEditForm({
+        workDate: "",
+        jobNumber: "",
+        jobName: "",
+        moduleNumber: "",
+        activityType: "",
+        hoursWorked: "",
+        notes: "",
+      });
+      // Force refresh of data
       queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/team"] });
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -138,10 +150,10 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     queryClient.invalidateQueries({ queryKey: ["/api/work-hours"] });
   };
 
-  const startEdit = (entry: WorkHoursWithUser) => {
+  const startEdit = (entry: any) => {
     setEditingId(entry.id);
     setEditForm({
-      workDate: entry.workDate.toString(),
+      workDate: new Date(entry.workDate).toISOString().split('T')[0], // Format for date input
       jobNumber: entry.jobNumber,
       jobName: entry.jobName || "",
       moduleNumber: entry.moduleNumber || "",
@@ -322,7 +334,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tutti gli operatori</SelectItem>
-                    {operators?.map((operator: User) => (
+                    {(operators || []).map((operator: any) => (
                       <SelectItem key={operator.id} value={operator.id}>
                         {operator.firstName && operator.lastName 
                           ? `${operator.firstName} ${operator.lastName}`
@@ -560,7 +572,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                         <TableCell>{entry.moduleNumber || '-'}</TableCell>
                         <TableCell>{entry.activityType}</TableCell>
                         <TableCell>{entry.hoursWorked}</TableCell>
-                        <TableCell className="max-w-xs truncate" title={entry.notes}>
+                        <TableCell className="max-w-xs truncate" title={entry.notes || undefined}>
                           {entry.notes || '-'}
                         </TableCell>
                         <TableCell>
