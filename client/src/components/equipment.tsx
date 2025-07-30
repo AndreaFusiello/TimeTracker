@@ -289,11 +289,11 @@ export default function Equipment({ user }: EquipmentProps) {
       calibrationExpiry: data.equipmentType === 'ut_probe' ? undefined : data.calibrationExpiry,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
       // Model field only for UT instruments and probes
-      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : null,
+      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
       // Probe-specific fields only for UT probes
-      angle: data.equipmentType === 'ut_probe' ? data.angle : null,
-      frequency: data.equipmentType === 'ut_probe' ? data.frequency : null,
-      dimension: data.equipmentType === 'ut_probe' ? data.dimension : null,
+      angle: data.equipmentType === 'ut_probe' ? data.angle : undefined,
+      frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
+      dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
     };
 
     if (editingEquipment) {
@@ -770,13 +770,24 @@ export default function Equipment({ user }: EquipmentProps) {
                   <TableRow>
                     <TableHead>MT/UT</TableHead>
                     <TableHead>Marca</TableHead>
-                    <TableHead>Modello</TableHead>
+                    {/* Show Model column only if there are UT instruments or probes in filtered results */}
+                    {filteredEquipment.some((eq: any) => eq.equipmentType === 'ultrasonic_instrument' || eq.equipmentType === 'ut_probe') && (
+                      <TableHead>Modello</TableHead>
+                    )}
                     <TableHead>N. Serie Interno</TableHead>
                     <TableHead>N. Serie</TableHead>
-                    <TableHead>Angolo</TableHead>
-                    <TableHead>Frequenza</TableHead>
-                    <TableHead>Dimensione</TableHead>
-                    <TableHead>Scadenza Calibrazione</TableHead>
+                    {/* Show probe-specific columns only if there are UT probes in filtered results */}
+                    {filteredEquipment.some((eq: any) => eq.equipmentType === 'ut_probe') && (
+                      <>
+                        <TableHead>Angolo</TableHead>
+                        <TableHead>Frequenza</TableHead>
+                        <TableHead>Dimensione</TableHead>
+                      </>
+                    )}
+                    {/* Show calibration column only if there are equipment that requires it */}
+                    {filteredEquipment.some((eq: any) => eq.equipmentType !== 'ut_probe') && (
+                      <TableHead>Scadenza Calibrazione</TableHead>
+                    )}
                     <TableHead>Operatore Assegnato</TableHead>
                     <TableHead>Stato</TableHead>
                     <TableHead>Certificato</TableHead>
@@ -789,42 +800,41 @@ export default function Equipment({ user }: EquipmentProps) {
                     <TableRow key={equipment.id}>
                       <TableCell>{getEquipmentTypeLabel(equipment.equipmentType)}</TableCell>
                       <TableCell className="font-medium">{equipment.brand}</TableCell>
-                      <TableCell>
-                        {(equipment.equipmentType === 'ultrasonic_instrument' || equipment.equipmentType === 'ut_probe') 
-                          ? (equipment.model || '-') 
-                          : '-'}
-                      </TableCell>
+                      {/* Show Model column only if there are UT instruments or probes in filtered results */}
+                      {filteredEquipment.some((eq: any) => eq.equipmentType === 'ultrasonic_instrument' || eq.equipmentType === 'ut_probe') && (
+                        <TableCell>
+                          {(equipment.equipmentType === 'ultrasonic_instrument' || equipment.equipmentType === 'ut_probe') 
+                            ? (equipment.model || '-') 
+                            : '-'}
+                        </TableCell>
+                      )}
                       <TableCell>{equipment.internalSerialNumber}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
-                      <TableCell>
-                        {equipment.equipmentType === 'ut_probe' 
-                          ? (equipment.angle || '-') 
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {equipment.equipmentType === 'ut_probe' 
-                          ? (equipment.frequency || '-') 
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {equipment.equipmentType === 'ut_probe' 
-                          ? (equipment.dimension || '-') 
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {equipment.calibrationExpiry ? (
-                          <div className="flex items-center">
-                            {isCalibrationExpiring(equipment.calibrationExpiry) && (
-                              <AlertTriangle className="h-4 w-4 text-orange-500 mr-1" />
-                            )}
-                            <span className={isCalibrationExpiring(equipment.calibrationExpiry) ? "text-orange-600 font-medium" : ""}>
-                              {new Date(equipment.calibrationExpiry).toLocaleDateString('it-IT')}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">Non richiesta</span>
-                        )}
-                      </TableCell>
+                      {/* Show probe-specific columns only if there are UT probes in filtered results */}
+                      {filteredEquipment.some((eq: any) => eq.equipmentType === 'ut_probe') && (
+                        <>
+                          <TableCell>{equipment.equipmentType === 'ut_probe' ? (equipment.angle || '-') : '-'}</TableCell>
+                          <TableCell>{equipment.equipmentType === 'ut_probe' ? (equipment.frequency || '-') : '-'}</TableCell>
+                          <TableCell>{equipment.equipmentType === 'ut_probe' ? (equipment.dimension || '-') : '-'}</TableCell>
+                        </>
+                      )}
+                      {/* Show calibration column only if there are equipment that requires it */}
+                      {filteredEquipment.some((eq: any) => eq.equipmentType !== 'ut_probe') && (
+                        <TableCell>
+                          {equipment.calibrationExpiry ? (
+                            <div className="flex items-center">
+                              {isCalibrationExpiring(equipment.calibrationExpiry) && (
+                                <AlertTriangle className="h-4 w-4 text-orange-500 mr-1" />
+                              )}
+                              <span className={isCalibrationExpiring(equipment.calibrationExpiry) ? "text-orange-600 font-medium" : ""}>
+                                {new Date(equipment.calibrationExpiry).toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">Non richiesta</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell>
                         {equipment.assignedOperator ? 
                           (equipment.assignedOperator.firstName && equipment.assignedOperator.lastName 
