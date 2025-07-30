@@ -135,11 +135,14 @@ Preferred communication style: Simple, everyday language.
 - **Work Hours Editing**: Administrators and team leaders can edit work hours entries inline in the history table
 - **Enhanced History View**: Added "Notes" column and comprehensive hours summary by job order and activity type
 - **Inline Editing**: Direct table editing with save/cancel actions for seamless user experience
+- **Admin User Creation**: Administrators can now create new user accounts with username/password from the admin panel
+- **Simplified Login Flow**: Removed landing page; users go directly to login page when not authenticated
 
 ### Technical Improvements
 - **Session Management**: Fixed cookie security settings for development environment
 - **Hybrid Authentication**: Full support for both Replit Auth and local accounts
 - **Role-Based Permissions**: Enhanced permission system for editing and deletion operations
 - **Real-time Updates**: Improved cache invalidation for immediate UI updates
+- **Controlled Registration**: Removed public registration; only administrators can create new user accounts
 
 The application is designed for scalability and maintainability, with clear separation of concerns, type safety throughout the stack, and comprehensive error handling for production use.
