@@ -54,15 +54,6 @@ export default function Equipment({ user }: EquipmentProps) {
     enabled: user.role === 'admin' || user.role === 'team_leader',
   });
 
-  const getDefaultEquipmentType = () => {
-    switch (activeTab) {
-      case 'mt': return 'magnetic_yoke';
-      case 'ut': return 'ultrasonic_instrument';
-      case 'sonde': return 'ut_probe';
-      default: return 'magnetic_yoke';
-    }
-  };
-
   const form = useForm<z.infer<typeof equipmentFormSchema>>({
     resolver: zodResolver(equipmentFormSchema),
     defaultValues: {
@@ -79,62 +70,6 @@ export default function Equipment({ user }: EquipmentProps) {
       status: "active",
     },
   });
-
-  const getOperatorName = (operatorId: string | null) => {
-    if (!operatorId || !operators || !Array.isArray(operators)) return "Non assegnato";
-    const operator = operators.find((op: any) => op.id === operatorId);
-    if (!operator) return "Non assegnato";
-    return operator.firstName && operator.lastName 
-      ? `${operator.firstName} ${operator.lastName}`
-      : operator.username || operator.email;
-  };
-
-  const isCalibrationExpiring = (expiryDate: string) => {
-    const expiry = new Date(expiryDate);
-    const today = new Date();
-    const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry <= 30; // Warning if expiring within 30 days
-  };
-
-  const getEquipmentTypeLabel = (type: string) => {
-    switch (type) {
-      case 'magnetic_yoke':
-        return 'MT';
-      case 'ultrasonic_instrument':
-        return 'UT';
-      case 'ut_probe':
-        return 'UT - Sonde';
-      default:
-        return type;
-    }
-  };
-
-  const canManageEquipment = user.role === 'admin' || user.role === 'team_leader';
-
-  // Filter equipment based on active tab and search term
-  const filteredEquipment = equipmentList && Array.isArray(equipmentList) ? equipmentList.filter((equipment: any) => {
-    const matchesTab = 
-      (activeTab === 'mt' && equipment.equipmentType === 'magnetic_yoke') ||
-      (activeTab === 'ut' && equipment.equipmentType === 'ultrasonic_instrument') ||
-      (activeTab === 'sonde' && equipment.equipmentType === 'ut_probe');
-    
-    const matchesSearch = searchTerm === "" || 
-      equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipment.internalSerialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipment.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (equipment.model && equipment.model.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesTab && matchesSearch;
-  }) : [];
-
-  const getTabTitle = (tab: string) => {
-    switch (tab) {
-      case 'mt': return 'Magnetoscopia';
-      case 'ut': return 'Ultrasuoni';
-      case 'sonde': return 'Sonde UT';
-      default: return '';
-    }
-  };
 
   const createEquipmentMutation = useMutation({
     mutationFn: async (data: InsertEquipment) => {
@@ -170,7 +105,7 @@ export default function Equipment({ user }: EquipmentProps) {
   });
 
   const updateEquipmentMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertEquipment> }) => {
       return await apiRequest("PUT", `/api/equipment/${id}`, data);
     },
     onSuccess: () => {
@@ -358,6 +293,71 @@ export default function Equipment({ user }: EquipmentProps) {
         description: "Impossibile scaricare il file",
         variant: "destructive",
       });
+    }
+  };
+
+  const getOperatorName = (operatorId: string | null) => {
+    if (!operatorId || !operators || !Array.isArray(operators)) return "Non assegnato";
+    const operator = operators.find((op: any) => op.id === operatorId);
+    if (!operator) return "Non assegnato";
+    return operator.firstName && operator.lastName 
+      ? `${operator.firstName} ${operator.lastName}`
+      : operator.username || operator.email;
+  };
+
+  const isCalibrationExpiring = (expiryDate: string) => {
+    const expiry = new Date(expiryDate);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 30; // Warning if expiring within 30 days
+  };
+
+  const getEquipmentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'magnetic_yoke':
+        return 'MT';
+      case 'ultrasonic_instrument':
+        return 'UT';
+      case 'ut_probe':
+        return 'UT - Sonde';
+      default:
+        return type;
+    }
+  };
+
+  const canManageEquipment = user.role === 'admin' || user.role === 'team_leader';
+
+  // Filter equipment based on active tab and search term
+  const filteredEquipment = equipmentList ? equipmentList.filter((equipment: any) => {
+    const matchesTab = 
+      (activeTab === 'mt' && equipment.equipmentType === 'magnetic_yoke') ||
+      (activeTab === 'ut' && equipment.equipmentType === 'ultrasonic_instrument') ||
+      (activeTab === 'sonde' && equipment.equipmentType === 'ut_probe');
+    
+    const matchesSearch = searchTerm === "" || 
+      equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      equipment.internalSerialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      equipment.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (equipment.model && equipment.model.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesTab && matchesSearch;
+  }) : [];
+
+  const getTabTitle = (tab: string) => {
+    switch (tab) {
+      case 'mt': return 'Magnetoscopia';
+      case 'ut': return 'Ultrasuoni';
+      case 'sonde': return 'Sonde UT';
+      default: return '';
+    }
+  };
+
+  const getDefaultEquipmentType = () => {
+    switch (activeTab) {
+      case 'mt': return 'magnetic_yoke';
+      case 'ut': return 'ultrasonic_instrument';
+      case 'sonde': return 'ut_probe';
+      default: return 'magnetic_yoke';
     }
   };
 
@@ -664,73 +664,74 @@ export default function Equipment({ user }: EquipmentProps) {
       </div>
 
       {/* File Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Carica File per {selectedEquipment?.brand} - {selectedEquipment?.internalSerialNumber}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleFileUpload} className="space-y-4">
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="calibrationCertificate" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Certificato di Calibrazione (PDF)
-                </Label>
-                <Input
-                  id="calibrationCertificate"
-                  name="calibrationCertificate"
-                  type="file"
-                  accept=".pdf"
-                  className="mt-1"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Formato supportato: PDF (max 10MB)
-                </p>
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Carica File per {selectedEquipment?.brand} - {selectedEquipment?.internalSerialNumber}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleFileUpload} className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="calibrationCertificate" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Certificato di Calibrazione (PDF)
+                  </Label>
+                  <Input
+                    id="calibrationCertificate"
+                    name="calibrationCertificate"
+                    type="file"
+                    accept=".pdf"
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato supportato: PDF (max 10MB)
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="equipmentPhoto" className="flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Foto dello Strumento
+                  </Label>
+                  <Input
+                    id="equipmentPhoto"
+                    name="equipmentPhoto"
+                    type="file"
+                    accept="image/*"
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formati supportati: JPG, PNG, GIF (max 10MB)
+                  </p>
+                </div>
               </div>
-              
-              <div>
-                <Label htmlFor="equipmentPhoto" className="flex items-center gap-2">
-                  <Image className="h-4 w-4" />
-                  Foto dello Strumento
-                </Label>
-                <Input
-                  id="equipmentPhoto"
-                  name="equipmentPhoto"
-                  type="file"
-                  accept="image/*"
-                  className="mt-1"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Formati supportati: JPG, PNG, WEBP (max 10MB)
-                </p>
-              </div>
-            </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => {
-                  setUploadDialogOpen(false);
-                  setSelectedEquipment(null);
-                }}
-              >
-                Annulla
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={uploadFileMutation.isPending}
-                className="bg-primary hover:bg-blue-700"
-              >
-                {uploadFileMutation.isPending ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : null}
-                Carica File
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setUploadDialogOpen(false);
+                    setSelectedEquipment(null);
+                  }}
+                >
+                  Annulla
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={uploadFileMutation.isPending}
+                  className="bg-primary hover:bg-blue-700"
+                >
+                  {uploadFileMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : null}
+                  Carica File
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <Card>
         <CardHeader>
