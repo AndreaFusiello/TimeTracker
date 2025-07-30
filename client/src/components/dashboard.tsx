@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Calendar, Briefcase, Users } from "lucide-react";
+import { Clock, Calendar, Briefcase, Users, TrendingUp } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface DashboardProps {
@@ -35,6 +35,12 @@ export default function Dashboard({ user }: DashboardProps) {
       color: "text-green-600"
     },
     {
+      title: "Ore Mensili",
+      value: isLoadingUserStats ? "..." : userStats?.monthHours?.toFixed(1) || "0.0",
+      icon: TrendingUp,
+      color: "text-blue-600"
+    },
+    {
       title: "Commesse Attive",
       value: isLoadingTeamStats ? "..." : teamStats?.activeJobs?.toString() || "0",
       icon: Briefcase,
@@ -48,10 +54,31 @@ export default function Dashboard({ user }: DashboardProps) {
     }] : [])
   ];
 
+  const overtimeStats = [
+    {
+      title: "Straordinario Settimanale",
+      subtitle: "Lun-Ven oltre 8h",
+      value: isLoadingUserStats ? "..." : userStats?.overtimeWeekly?.toFixed(1) || "0.0",
+      color: "text-yellow-600"
+    },
+    {
+      title: "Straordinario Extra",
+      subtitle: "Sabato",
+      value: isLoadingUserStats ? "..." : userStats?.overtimeExtra?.toFixed(1) || "0.0",
+      color: "text-orange-600"
+    },
+    {
+      title: "Straordinario Festivo",
+      subtitle: "Domenica e festività",
+      value: isLoadingUserStats ? "..." : userStats?.overtimeHoliday?.toFixed(1) || "0.0",
+      color: "text-red-600"
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-5">
@@ -70,6 +97,39 @@ export default function Dashboard({ user }: DashboardProps) {
           </Card>
         ))}
       </div>
+
+      {/* Overtime Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Ore di Straordinario - Mese Corrente</CardTitle>
+          <p className="text-sm text-gray-600">Categorizzazione delle ore straordinarie</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {overtimeStats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <dt className="text-sm font-medium text-gray-500 mb-1">{stat.title}</dt>
+                  <dt className="text-xs text-gray-400 mb-2">{stat.subtitle}</dt>
+                  <dd className={`text-2xl font-bold ${stat.color}`}>
+                    {stat.value}h
+                  </dd>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Totale Straordinari:</span>
+              <span className="text-lg font-bold text-primary">
+                {isLoadingUserStats ? "..." : 
+                  ((userStats?.overtimeWeekly || 0) + (userStats?.overtimeExtra || 0) + (userStats?.overtimeHoliday || 0)).toFixed(1)
+                }h
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Activities */}
       <Card>

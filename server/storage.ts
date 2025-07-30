@@ -336,6 +336,9 @@ export class DatabaseStorage implements IStorage {
     todayHours: number;
     weekHours: number;
     monthHours: number;
+    overtimeWeekly: number;
+    overtimeExtra: number;
+    overtimeHoliday: number;
   }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -344,6 +347,21 @@ export class DatabaseStorage implements IStorage {
     weekStart.setDate(today.getDate() - today.getDay());
     
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Italian holidays 2025 (you can update this yearly)
+    const italianHolidays2025 = [
+      '2025-01-01', // Capodanno
+      '2025-01-06', // Epifania
+      '2025-04-20', // Pasquetta
+      '2025-04-25', // Festa della Liberazione
+      '2025-05-01', // Festa del Lavoro
+      '2025-06-02', // Festa della Repubblica
+      '2025-08-15', // Ferragosto
+      '2025-11-01', // Ognissanti
+      '2025-12-08', // Immacolata Concezione
+      '2025-12-25', // Natale
+      '2025-12-26', // Santo Stefano
+    ];
 
     // Get today's hours
     const todayEntries = await db
@@ -372,10 +390,40 @@ export class DatabaseStorage implements IStorage {
         gte(workHours.workDate, monthStart)
       ));
 
+    // Calculate overtime
+    let overtimeWeekly = 0;  // Monday-Friday overtime (beyond 8h/day)
+    let overtimeExtra = 0;   // Saturday
+    let overtimeHoliday = 0; // Sunday + Italian holidays
+
+    monthEntries.forEach(entry => {
+      const date = new Date(entry.workDate);
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const dateString = date.toISOString().split('T')[0];
+      const hours = parseFloat(entry.hoursWorked);
+      
+      const isItalianHoliday = italianHolidays2025.includes(dateString);
+      
+      if (dayOfWeek === 0 || isItalianHoliday) {
+        // Sunday or Italian holiday - all hours are holiday overtime
+        overtimeHoliday += hours;
+      } else if (dayOfWeek === 6) {
+        // Saturday - all hours are extra overtime
+        overtimeExtra += hours;
+      } else {
+        // Monday-Friday - overtime beyond 8 hours
+        if (hours > 8) {
+          overtimeWeekly += (hours - 8);
+        }
+      }
+    });
+
     return {
       todayHours: todayEntries.reduce((sum, entry) => sum + parseFloat(entry.hoursWorked), 0),
       weekHours: weekEntries.reduce((sum, entry) => sum + parseFloat(entry.hoursWorked), 0),
       monthHours: monthEntries.reduce((sum, entry) => sum + parseFloat(entry.hoursWorked), 0),
+      overtimeWeekly: overtimeWeekly,
+      overtimeExtra: overtimeExtra,
+      overtimeHoliday: overtimeHoliday,
     };
   }
 
