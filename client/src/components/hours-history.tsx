@@ -383,38 +383,40 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                 {Object.entries(hoursSummary).map(([jobNumber, jobData]) => (
                   <div key={jobNumber} className="border rounded-lg p-4">
                     <h4 className="font-semibold text-md mb-3 text-primary">
-                      Commessa: {jobNumber} - {jobData.jobName}
+                      {jobData.jobName}
                     </h4>
                     
-                    {/* Modules breakdown */}
-                    <div className="space-y-3">
-                      {Object.entries(jobData.modules).map(([moduleNumber, activities]) => (
-                        <div key={moduleNumber} className="bg-gray-50 rounded-lg p-3">
-                          <h5 className="font-medium text-sm mb-2 text-gray-800">
-                            {moduleNumber === 'Altro' ? 'Altri Lavori' : moduleNumber}
-                          </h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {Object.entries(activities).map(([activity, hours]) => (
-                              <div key={activity} className="flex justify-between items-center p-2 bg-white rounded border">
-                                <span className="text-sm font-medium text-gray-700">
-                                  {activity}
-                                </span>
-                                <Badge variant="secondary" className="ml-2">
-                                  {hours.toFixed(1)}h
+                    {/* Modules breakdown - Horizontal scrollable */}
+                    <div className="overflow-x-auto">
+                      <div className="flex space-x-4 pb-2" style={{ minWidth: 'max-content' }}>
+                        {Object.entries(jobData.modules).map(([moduleNumber, activities]) => (
+                          <div key={moduleNumber} className="bg-gray-50 rounded-lg p-3 min-w-[280px] flex-shrink-0">
+                            <h5 className="font-medium text-sm mb-2 text-gray-800 text-center">
+                              {moduleNumber === 'Altro' ? 'Altri Lavori' : moduleNumber}
+                            </h5>
+                            <div className="space-y-2">
+                              {Object.entries(activities).map(([activity, hours]) => (
+                                <div key={activity} className="flex justify-between items-center p-2 bg-white rounded border">
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {activity}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hours.toFixed(1)}h
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-300">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-gray-700">Subtotale:</span>
+                                <Badge variant="outline" className="text-primary border-primary text-xs">
+                                  {Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0).toFixed(1)}h
                                 </Badge>
                               </div>
-                            ))}
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-gray-300">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-700">Subtotale Modulo:</span>
-                              <Badge variant="outline" className="text-primary border-primary">
-                                {Object.values(activities).reduce((sum: number, hours: number) => sum + hours, 0).toFixed(1)}h
-                              </Badge>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                     
                     <div className="mt-4 pt-3 border-t-2 border-gray-300">
