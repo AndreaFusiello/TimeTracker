@@ -44,6 +44,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     jobNumber: "",
     jobName: "",
     activityType: "",
+    repairCompany: "",
     hoursWorked: "",
     notes: "",
   });
@@ -67,6 +68,8 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     queryKey: ["/api/users"],
     enabled: user.role === 'admin',
   });
+
+  const operatorsList = Array.isArray(operators) ? operators : [];
 
   const deleteHours = useMutation({
     mutationFn: async (id: string) => {
@@ -116,6 +119,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
         jobNumber: "",
         jobName: "",
         activityType: "",
+        repairCompany: "",
         hoursWorked: "",
         notes: "",
       });
@@ -155,6 +159,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
       jobNumber: entry.jobNumber,
       jobName: entry.jobName || "",
       activityType: entry.activityType,
+      repairCompany: entry.repairCompany || "",
       hoursWorked: entry.hoursWorked.toString(),
       notes: entry.notes || "",
     });
@@ -167,6 +172,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
       jobNumber: "",
       jobName: "",
       activityType: "",
+      repairCompany: "",
       hoursWorked: "",
       notes: "",
     });
@@ -182,6 +188,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
         jobNumber: editForm.jobNumber,
         jobName: editForm.jobName,
         activityType: editForm.activityType,
+        repairCompany: editForm.repairCompany,
         hoursWorked: parseFloat(editForm.hoursWorked),
         notes: editForm.notes,
       },
@@ -332,7 +339,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tutti gli operatori</SelectItem>
-                    {(operators || []).map((operator: any) => (
+                    {operatorsList.map((operator: any) => (
                       <SelectItem key={operator.id} value={operator.id}>
                         {operator.firstName && operator.lastName 
                           ? `${operator.firstName} ${operator.lastName}`
@@ -457,11 +464,12 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
                   <TableHead>Operatore</TableHead>
+                  <TableHead>Data</TableHead>
                   <TableHead>Commessa</TableHead>
                   <TableHead>Nome/Acronimo</TableHead>
                   <TableHead>Attività</TableHead>
+                  <TableHead>Ditta Riparazione</TableHead>
                   <TableHead>Ore</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead>Azioni</TableHead>
@@ -473,6 +481,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                     {editingId === entry.id ? (
                       // Edit mode
                       <>
+                        <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>
                           <Input
                             type="date"
@@ -481,7 +490,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                             className="w-full"
                           />
                         </TableCell>
-                        <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>
                           <Input
                             value={editForm.jobNumber}
@@ -497,7 +505,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                             placeholder="Nome commessa"
                           />
                         </TableCell>
-
                         <TableCell>
                           <Select 
                             value={editForm.activityType} 
@@ -512,6 +519,14 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                               ))}
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editForm.repairCompany || ''}
+                            onChange={(e) => setEditForm({ ...editForm, repairCompany: e.target.value })}
+                            className="w-full"
+                            placeholder="Ditta riparazione"
+                          />
                         </TableCell>
                         <TableCell>
                           <Input
@@ -555,13 +570,14 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                     ) : (
                       // View mode
                       <>
+                        <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>
                           {new Date(entry.workDate).toLocaleDateString('it-IT')}
                         </TableCell>
-                        <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>{entry.jobNumber}</TableCell>
                         <TableCell>{entry.jobName || '-'}</TableCell>
                         <TableCell>{entry.activityType}</TableCell>
+                        <TableCell>{(entry as any).repairCompany || '-'}</TableCell>
                         <TableCell>{entry.hoursWorked}</TableCell>
                         <TableCell className="max-w-xs truncate" title={entry.notes || undefined}>
                           {entry.notes || '-'}
