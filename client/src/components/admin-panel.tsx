@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { UserPlus, Edit, UserX, Save, Trash2 } from "lucide-react";
+import { UserPlus, Edit, UserX, Save, Trash2, Plus, X } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface AdminPanelProps {
@@ -26,6 +27,16 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     timezone: 'Europe/Rome',
     dailyReminders: true,
     weeklyBackup: false,
+  });
+
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'operator' as 'operator' | 'team_leader' | 'admin',
   });
 
   const { data: users, isLoading: isLoadingUsers } = useQuery({
@@ -94,6 +105,46 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     },
   });
 
+  const createUser = useMutation({
+    mutationFn: async (userData: typeof newUser) => {
+      await apiRequest("POST", "/api/users/create", userData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Nuovo utente creato con successo",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setShowCreateUser(false);
+      setNewUser({
+        username: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        role: 'operator',
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile creare l'utente. Verifica che username e email non siano già in uso.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRoleChange = (userId: string, newRole: string) => {
     updateUserRole.mutate({ userId, role: newRole });
   };
@@ -102,6 +153,30 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     if (confirm(`Sei sicuro di voler eliminare l'utente "${userName}"? Questa azione non può essere annullata e verranno eliminate anche tutte le sue ore lavorative.`)) {
       deleteUser.mutate(userId);
     }
+  };
+
+  const handleCreateUser = () => {
+    if (!newUser.username || !newUser.password || !newUser.firstName || !newUser.lastName) {
+      toast({
+        title: "Errore",
+        description: "Compila tutti i campi obbligatori",
+        variant: "destructive",
+      });
+      return;
+    }
+    createUser.mutate(newUser);
+  };
+
+  const resetCreateUserForm = () => {
+    setNewUser({
+      username: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      role: 'operator',
+    });
+    setShowCreateUser(false);
   };
 
   const handleSaveSettings = () => {
@@ -165,19 +240,139 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <CardTitle>Gestione Utenti</CardTitle>
               <p className="text-sm text-gray-600 mt-1">Amministra utenti e loro permessi</p>
             </div>
-            <Button className="mt-3 sm:mt-0">
+            <Button 
+              className="mt-3 sm:mt-0"
+              onClick={() => setShowCreateUser(true)}
+              disabled={showCreateUser}
+            >
               <UserPlus className="mr-2 h-4 w-4" />
               Nuovo Utente
             </Button>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Create User Form */}
+          {showCreateUser && (
+            <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Crea Nuovo Utente</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetCreateUserForm}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username *</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                    placeholder="Username per il login"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Password (min. 4 caratteri)"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Nome *</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={newUser.firstName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="Nome"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Cognome *</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={newUser.lastName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Cognome"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email (opzionale)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="email@esempio.it"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="role">Ruolo</Label>
+                  <Select 
+                    value={newUser.role} 
+                    onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value as 'operator' | 'team_leader' | 'admin' }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="operator">Operatore</SelectItem>
+                      <SelectItem value="team_leader">Caposquadra</SelectItem>
+                      <SelectItem value="admin">Amministratore</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={resetCreateUserForm}
+                  disabled={createUser.isPending}
+                >
+                  Annulla
+                </Button>
+                <Button
+                  onClick={handleCreateUser}
+                  disabled={createUser.isPending}
+                >
+                  {createUser.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creazione...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Crea Utente
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+          
           {isLoadingUsers ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-sm text-gray-600">Caricamento...</p>
             </div>
-          ) : users && users.length > 0 ? (
+          ) : users && Array.isArray(users) && users.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -191,7 +386,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((userItem: User) => (
+                  {(users as User[]).map((userItem: User) => (
                     <TableRow key={userItem.id}>
                       <TableCell>
                         <div className="flex items-center">
