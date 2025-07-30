@@ -165,7 +165,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  calibrationExpiry: z.string().optional(), // Optional for UT probes
+  calibrationExpiry: z.string().nullable().optional(), // Optional for UT probes, can be null
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),
@@ -173,7 +173,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
 });
 
 export const updateEquipmentSchema = insertEquipmentSchema.partial().extend({
-  calibrationExpiry: z.string().optional(),
+  calibrationExpiry: z.string().nullable().optional(),
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),
