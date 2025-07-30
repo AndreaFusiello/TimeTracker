@@ -155,9 +155,13 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  calibrationExpiry: z.string().min(1, "Data di calibrazione richiesta"),
 });
 
-export const updateEquipmentSchema = insertEquipmentSchema.partial();
+export const updateEquipmentSchema = insertEquipmentSchema.partial().extend({
+  calibrationExpiry: z.string().optional(),
+});
 
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
 export type UpdateEquipment = z.infer<typeof updateEquipmentSchema>;

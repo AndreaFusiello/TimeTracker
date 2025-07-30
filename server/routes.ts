@@ -590,10 +590,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertEquipmentSchema.parse(req.body);
       
-      // Convert calibrationExpiry to Date
+      // Convert calibrationExpiry to Date and handle null operator
       const equipmentData = {
         ...validatedData,
         calibrationExpiry: new Date(validatedData.calibrationExpiry),
+        assignedOperatorId: validatedData.assignedOperatorId || null,
       };
       
       const equipment = await storage.createEquipment(equipmentData);
@@ -653,10 +654,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = updateEquipmentSchema.parse(req.body);
       
-      // Convert calibrationExpiry to Date if provided
+      // Convert calibrationExpiry to Date if provided and handle null operator
       const updates: any = { ...validatedData };
       if (validatedData.calibrationExpiry) {
         updates.calibrationExpiry = new Date(validatedData.calibrationExpiry);
+      }
+      if (validatedData.assignedOperatorId === null || validatedData.assignedOperatorId === undefined) {
+        updates.assignedOperatorId = null;
       }
       
       const equipment = await storage.updateEquipment(req.params.id, updates);
