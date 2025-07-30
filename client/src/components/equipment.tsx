@@ -24,6 +24,9 @@ interface EquipmentProps {
 const equipmentFormSchema = insertEquipmentSchema.extend({
   calibrationExpiry: z.string().min(1, "La data di scadenza calibrazione è obbligatoria"),
   model: z.string().optional(),
+  angle: z.string().optional(),
+  frequency: z.string().optional(),
+  dimension: z.string().optional(),
 });
 
 export default function Equipment({ user }: EquipmentProps) {
@@ -57,6 +60,9 @@ export default function Equipment({ user }: EquipmentProps) {
       model: "",
       internalSerialNumber: "",
       serialNumber: "",
+      angle: "",
+      frequency: "",
+      dimension: "",
       calibrationExpiry: "",
       assignedOperatorId: "unassigned",
       status: "active",
@@ -223,6 +229,9 @@ export default function Equipment({ user }: EquipmentProps) {
       model: equipment.model || "",
       internalSerialNumber: equipment.internalSerialNumber,
       serialNumber: equipment.serialNumber,
+      angle: equipment.angle || "",
+      frequency: equipment.frequency || "",
+      dimension: equipment.dimension || "",
       calibrationExpiry: new Date(equipment.calibrationExpiry).toISOString().split('T')[0],
       assignedOperatorId: equipment.assignedOperatorId || "unassigned",
       status: equipment.status,
@@ -308,7 +317,7 @@ export default function Equipment({ user }: EquipmentProps) {
       case 'ultrasonic_instrument':
         return 'UT';
       case 'ut_probe':
-        return 'Sonda UT';
+        return 'UT Sonda';
       default:
         return type;
     }
@@ -361,7 +370,7 @@ export default function Equipment({ user }: EquipmentProps) {
                             <SelectContent>
                               <SelectItem value="magnetic_yoke">MT - Magnetoscopia</SelectItem>
                               <SelectItem value="ultrasonic_instrument">UT - Ultrasuoni</SelectItem>
-                              <SelectItem value="ut_probe">Sonda UT</SelectItem>
+                              <SelectItem value="ut_probe">UT Sonda</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -396,6 +405,52 @@ export default function Equipment({ user }: EquipmentProps) {
                         </FormItem>
                       )}
                     />
+
+                    {form.watch("equipmentType") === "ut_probe" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="angle"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Angolo</FormLabel>
+                              <FormControl>
+                                <Input placeholder="es. 45°, 60°, 70°..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="frequency"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Frequenza</FormLabel>
+                              <FormControl>
+                                <Input placeholder="es. 2.25MHz, 5MHz..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="dimension"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Dimensione</FormLabel>
+                              <FormControl>
+                                <Input placeholder="es. 10mm, 20mm..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
 
                     <FormField
                       control={form.control}
@@ -613,6 +668,9 @@ export default function Equipment({ user }: EquipmentProps) {
                     <TableHead>Modello</TableHead>
                     <TableHead>N. Serie Interno</TableHead>
                     <TableHead>N. Serie</TableHead>
+                    <TableHead>Angolo</TableHead>
+                    <TableHead>Frequenza</TableHead>
+                    <TableHead>Dimensione</TableHead>
                     <TableHead>Scadenza Calibrazione</TableHead>
                     <TableHead>Operatore Assegnato</TableHead>
                     <TableHead>Stato</TableHead>
@@ -629,6 +687,9 @@ export default function Equipment({ user }: EquipmentProps) {
                       <TableCell>{equipment.model || '-'}</TableCell>
                       <TableCell>{equipment.internalSerialNumber}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
+                      <TableCell>{equipment.angle || '-'}</TableCell>
+                      <TableCell>{equipment.frequency || '-'}</TableCell>
+                      <TableCell>{equipment.dimension || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           {isCalibrationExpiring(equipment.calibrationExpiry) && (
