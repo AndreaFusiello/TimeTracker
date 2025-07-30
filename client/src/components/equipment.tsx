@@ -289,11 +289,11 @@ export default function Equipment({ user }: EquipmentProps) {
       calibrationExpiry: data.equipmentType === 'ut_probe' ? undefined : data.calibrationExpiry,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
       // Model field only for UT instruments and probes
-      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
+      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : null,
       // Probe-specific fields only for UT probes
-      angle: data.equipmentType === 'ut_probe' ? data.angle : undefined,
-      frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
-      dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
+      angle: data.equipmentType === 'ut_probe' ? data.angle : null,
+      frequency: data.equipmentType === 'ut_probe' ? data.frequency : null,
+      dimension: data.equipmentType === 'ut_probe' ? data.dimension : null,
     };
 
     if (editingEquipment) {
@@ -789,12 +789,28 @@ export default function Equipment({ user }: EquipmentProps) {
                     <TableRow key={equipment.id}>
                       <TableCell>{getEquipmentTypeLabel(equipment.equipmentType)}</TableCell>
                       <TableCell className="font-medium">{equipment.brand}</TableCell>
-                      <TableCell>{equipment.model || '-'}</TableCell>
+                      <TableCell>
+                        {(equipment.equipmentType === 'ultrasonic_instrument' || equipment.equipmentType === 'ut_probe') 
+                          ? (equipment.model || '-') 
+                          : '-'}
+                      </TableCell>
                       <TableCell>{equipment.internalSerialNumber}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
-                      <TableCell>{equipment.angle || '-'}</TableCell>
-                      <TableCell>{equipment.frequency || '-'}</TableCell>
-                      <TableCell>{equipment.dimension || '-'}</TableCell>
+                      <TableCell>
+                        {equipment.equipmentType === 'ut_probe' 
+                          ? (equipment.angle || '-') 
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {equipment.equipmentType === 'ut_probe' 
+                          ? (equipment.frequency || '-') 
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {equipment.equipmentType === 'ut_probe' 
+                          ? (equipment.dimension || '-') 
+                          : '-'}
+                      </TableCell>
                       <TableCell>
                         {equipment.calibrationExpiry ? (
                           <div className="flex items-center">
