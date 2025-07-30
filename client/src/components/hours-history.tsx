@@ -383,7 +383,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                 {Object.entries(hoursSummary).map(([jobNumber, jobData]) => (
                   <div key={jobNumber} className="border rounded-lg p-4">
                     <h4 className="font-semibold text-md mb-3 text-primary">
-                      Commessa {jobNumber}: {jobData.jobName}
+                      Commessa {jobNumber}: {jobData.jobName.replace(/MOD\s*\d+/gi, '').trim() || jobData.jobName}
                     </h4>
                     
                     {/* Modules breakdown - Horizontal scrollable */}
