@@ -253,9 +253,12 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     workHours.forEach((entry: WorkHoursWithUser) => {
       const jobNumber = entry.jobNumber;
       const jobName = entry.jobName || entry.jobNumber;
-      const moduleNumber = entry.moduleNumber || 'N/A';
       const activityType = entry.activityType;
       const hours = parseFloat(entry.hoursWorked.toString()) || 0;
+      
+      // Extract module number from job name (e.g., "MOD 93", "MOD 94")
+      const moduleMatch = jobName?.match(/MOD\s*(\d+)/i);
+      const moduleNumber = moduleMatch ? `MOD ${moduleMatch[1]}` : 'Altro';
       
       if (!summary[jobNumber]) {
         summary[jobNumber] = {
@@ -388,7 +391,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                       {Object.entries(jobData.modules).map(([moduleNumber, activities]) => (
                         <div key={moduleNumber} className="bg-gray-50 rounded-lg p-3">
                           <h5 className="font-medium text-sm mb-2 text-gray-800">
-                            {moduleNumber === 'N/A' ? 'Senza Modulo' : `Modulo: ${moduleNumber}`}
+                            {moduleNumber === 'Altro' ? 'Altri Lavori' : moduleNumber}
                           </h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                             {Object.entries(activities).map(([activity, hours]) => (
