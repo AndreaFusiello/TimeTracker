@@ -484,6 +484,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         equipmentType: equipmentData.equipmentType,
         brand: equipmentData.brand,
+        model: equipmentData.model,
         internalSerialNumber: equipmentData.internalSerialNumber,
         serialNumber: equipmentData.serialNumber,
         calibrationExpiry: equipmentData.calibrationExpiry,
@@ -502,6 +503,7 @@ export class DatabaseStorage implements IStorage {
         id: equipment.id,
         equipmentType: equipment.equipmentType,
         brand: equipment.brand,
+        model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
         calibrationExpiry: equipment.calibrationExpiry,
@@ -530,6 +532,7 @@ export class DatabaseStorage implements IStorage {
         id: equipment.id,
         equipmentType: equipment.equipmentType,
         brand: equipment.brand,
+        model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
         calibrationExpiry: equipment.calibrationExpiry,
@@ -564,6 +567,7 @@ export class DatabaseStorage implements IStorage {
     
     if (updates.equipmentType !== undefined) updateData.equipmentType = updates.equipmentType;
     if (updates.brand !== undefined) updateData.brand = updates.brand;
+    if (updates.model !== undefined) updateData.model = updates.model;
     if (updates.internalSerialNumber !== undefined) updateData.internalSerialNumber = updates.internalSerialNumber;
     if (updates.serialNumber !== undefined) updateData.serialNumber = updates.serialNumber;
     if (updates.calibrationExpiry !== undefined) updateData.calibrationExpiry = updates.calibrationExpiry;

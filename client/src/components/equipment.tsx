@@ -23,6 +23,7 @@ interface EquipmentProps {
 
 const equipmentFormSchema = insertEquipmentSchema.extend({
   calibrationExpiry: z.string().min(1, "La data di scadenza calibrazione è obbligatoria"),
+  model: z.string().optional(),
 });
 
 export default function Equipment({ user }: EquipmentProps) {
@@ -53,6 +54,7 @@ export default function Equipment({ user }: EquipmentProps) {
     defaultValues: {
       equipmentType: "magnetic_yoke",
       brand: "",
+      model: "",
       internalSerialNumber: "",
       serialNumber: "",
       calibrationExpiry: "",
@@ -218,6 +220,7 @@ export default function Equipment({ user }: EquipmentProps) {
     form.reset({
       equipmentType: equipment.equipmentType,
       brand: equipment.brand,
+      model: equipment.model || "",
       internalSerialNumber: equipment.internalSerialNumber,
       serialNumber: equipment.serialNumber,
       calibrationExpiry: new Date(equipment.calibrationExpiry).toISOString().split('T')[0],
@@ -302,6 +305,8 @@ export default function Equipment({ user }: EquipmentProps) {
     switch (type) {
       case 'magnetic_yoke':
         return 'Giogo Magnetico';
+      case 'ultrasonic_instrument':
+        return 'Strumento ad Ultrasuoni';
       default:
         return type;
     }
@@ -314,7 +319,7 @@ export default function Equipment({ user }: EquipmentProps) {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Attrezzature NDT</h1>
-          <p className="text-gray-600">Controlli non distruttivi - Attrezzature magnetiche</p>
+          <p className="text-gray-600">Controlli non distruttivi - Attrezzature magnetiche e ultrasoniche</p>
         </div>
         {canManageEquipment && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -353,6 +358,7 @@ export default function Equipment({ user }: EquipmentProps) {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="magnetic_yoke">Giogo Magnetico</SelectItem>
+                              <SelectItem value="ultrasonic_instrument">Strumento ad Ultrasuoni</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -367,7 +373,21 @@ export default function Equipment({ user }: EquipmentProps) {
                         <FormItem>
                           <FormLabel>Marca</FormLabel>
                           <FormControl>
-                            <Input placeholder="es. Magnaflux, Parker..." {...field} />
+                            <Input placeholder="es. Magnaflux, Olympus..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="model"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modello</FormLabel>
+                          <FormControl>
+                            <Input placeholder="es. 38DL PLUS, EPOCH 6LT..." {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -587,6 +607,7 @@ export default function Equipment({ user }: EquipmentProps) {
                   <TableRow>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Marca</TableHead>
+                    <TableHead>Modello</TableHead>
                     <TableHead>N. Serie Interno</TableHead>
                     <TableHead>N. Serie</TableHead>
                     <TableHead>Scadenza Calibrazione</TableHead>
@@ -602,6 +623,7 @@ export default function Equipment({ user }: EquipmentProps) {
                     <TableRow key={equipment.id}>
                       <TableCell>{getEquipmentTypeLabel(equipment.equipmentType)}</TableCell>
                       <TableCell className="font-medium">{equipment.brand}</TableCell>
+                      <TableCell>{equipment.model || '-'}</TableCell>
                       <TableCell>{equipment.internalSerialNumber}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
                       <TableCell>

@@ -140,8 +140,9 @@ export type User = typeof users.$inferSelect;
 // Equipment management table for non-destructive testing equipment
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", etc.
+  equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", "ultrasonic_instrument", etc.
   brand: varchar("brand").notNull(),
+  model: varchar("model"), // Model field for ultrasonic instruments
   internalSerialNumber: varchar("internal_serial_number").notNull().unique(),
   serialNumber: varchar("serial_number").notNull(),
   calibrationExpiry: timestamp("calibration_expiry").notNull(),
@@ -159,10 +160,12 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   updatedAt: true,
 }).extend({
   calibrationExpiry: z.string().min(1, "Data di calibrazione richiesta"),
+  model: z.string().optional(),
 });
 
 export const updateEquipmentSchema = insertEquipmentSchema.partial().extend({
   calibrationExpiry: z.string().optional(),
+  model: z.string().optional(),
 });
 
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
