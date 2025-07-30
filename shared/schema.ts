@@ -109,6 +109,24 @@ export const insertWorkHoursSchema = createInsertSchema(workHours).omit({
   updatedAt: true,
 });
 
+export const updateWorkHoursSchema = z.object({
+  workDate: z.string().optional(),
+  jobNumber: z.string().optional(),
+  jobName: z.string().optional(),
+  moduleNumber: z.string().optional(),
+  activityType: z.enum([
+    'NDE-MT/PT',
+    'NDE-UT', 
+    'RIP.NDE - MT/PT',
+    'RIP.NDE - UT',
+    'ISPEZIONE WI',
+    'RIP.ISPEZIONE WI',
+    'DOCUMENTAZIONE'
+  ]).optional(),
+  hoursWorked: z.number().optional(),
+  notes: z.string().optional(),
+});
+
 export const insertJobOrderSchema = createInsertSchema(jobOrders).omit({
   id: true,
   createdAt: true,

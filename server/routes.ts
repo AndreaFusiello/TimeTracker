@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema } from "@shared/schema";
+import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Simple auth middleware for local users
@@ -240,7 +240,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const updates = insertWorkHoursSchema.partial().parse(req.body);
+      const validatedData = updateWorkHoursSchema.parse(req.body);
+      
+      // Convert types for database
+      const updates: any = { ...validatedData };
+      if (validatedData.workDate) {
+        updates.workDate = new Date(validatedData.workDate);
+      }
+      
       const updatedWorkHours = await storage.updateWorkHours(req.params.id, updates);
       res.json(updatedWorkHours);
     } catch (error) {
