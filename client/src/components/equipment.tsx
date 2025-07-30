@@ -304,9 +304,9 @@ export default function Equipment({ user }: EquipmentProps) {
   const getEquipmentTypeLabel = (type: string) => {
     switch (type) {
       case 'magnetic_yoke':
-        return 'Giogo Magnetico';
+        return 'MT';
       case 'ultrasonic_instrument':
-        return 'Strumento ad Ultrasuoni';
+        return 'UT';
       default:
         return type;
     }
@@ -319,7 +319,7 @@ export default function Equipment({ user }: EquipmentProps) {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Attrezzature NDT</h1>
-          <p className="text-gray-600">Controlli non distruttivi - Attrezzature magnetiche e ultrasoniche</p>
+          <p className="text-gray-600">Controlli non distruttivi - Attrezzature MT e UT</p>
         </div>
         {canManageEquipment && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -357,8 +357,8 @@ export default function Equipment({ user }: EquipmentProps) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="magnetic_yoke">Giogo Magnetico</SelectItem>
-                              <SelectItem value="ultrasonic_instrument">Strumento ad Ultrasuoni</SelectItem>
+                              <SelectItem value="magnetic_yoke">MT - Magnetoscopia</SelectItem>
+                              <SelectItem value="ultrasonic_instrument">UT - Ultrasuoni</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -605,7 +605,7 @@ export default function Equipment({ user }: EquipmentProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>MT/UT</TableHead>
                     <TableHead>Marca</TableHead>
                     <TableHead>Modello</TableHead>
                     <TableHead>N. Serie Interno</TableHead>

@@ -149,11 +149,16 @@ Preferred communication style: Simple, everyday language.
 
 ### Equipment Management System (July 2025)
 - **NDT Equipment Tracking**: Full equipment management system for non-destructive testing tools
-- **Magnetic Yoke Management**: Specialized tracking for magnetic yokes with:
-  - Brand and model information
+- **Dual Equipment Types**: Support for both MT (Magnetoscopia) and UT (Ultrasuoni) equipment with:
+  - Brand and model information (model field especially for ultrasonic instruments)
   - Internal serial number and manufacturer serial number
   - Calibration expiry dates with warning system (30-day alerts)
   - Operator assignment functionality
+- **File Management**: Complete file upload/download system with:
+  - PDF calibration certificates (10MB limit)
+  - Equipment photos (image formats, 10MB limit)
+  - Role-based access (operators see only assigned equipment files)
+  - Automatic file cleanup on equipment deletion
 - **Role-Based Access**: Operators see only assigned equipment, team leaders and admins manage all
 - **Status Tracking**: Active, maintenance, and retired equipment states
 - **Integration**: Equipment tab positioned between Reports and Administration
