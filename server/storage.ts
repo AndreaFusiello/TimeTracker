@@ -478,26 +478,70 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Equipment operations
-  async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
+  async createEquipment(equipmentData: any): Promise<Equipment> {
     const [equipmentEntry] = await db
       .insert(equipment)
-      .values(equipmentData)
+      .values({
+        equipmentType: equipmentData.equipmentType,
+        brand: equipmentData.brand,
+        internalSerialNumber: equipmentData.internalSerialNumber,
+        serialNumber: equipmentData.serialNumber,
+        calibrationExpiry: equipmentData.calibrationExpiry,
+        assignedOperatorId: equipmentData.assignedOperatorId,
+        status: equipmentData.status,
+      })
       .returning();
     return equipmentEntry;
   }
 
-  async getEquipmentByOperator(operatorId: string): Promise<Equipment[]> {
+  async getEquipmentByOperator(operatorId: string): Promise<any[]> {
     return await db
-      .select()
+      .select({
+        id: equipment.id,
+        equipmentType: equipment.equipmentType,
+        brand: equipment.brand,
+        internalSerialNumber: equipment.internalSerialNumber,
+        serialNumber: equipment.serialNumber,
+        calibrationExpiry: equipment.calibrationExpiry,
+        assignedOperatorId: equipment.assignedOperatorId,
+        status: equipment.status,
+        createdAt: equipment.createdAt,
+        updatedAt: equipment.updatedAt,
+        assignedOperator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          username: users.username,
+        }
+      })
       .from(equipment)
+      .leftJoin(users, eq(equipment.assignedOperatorId, users.id))
       .where(eq(equipment.assignedOperatorId, operatorId))
       .orderBy(asc(equipment.brand));
   }
 
-  async getAllEquipment(): Promise<Equipment[]> {
+  async getAllEquipment(): Promise<any[]> {
     return await db
-      .select()
+      .select({
+        id: equipment.id,
+        equipmentType: equipment.equipmentType,
+        brand: equipment.brand,
+        internalSerialNumber: equipment.internalSerialNumber,
+        serialNumber: equipment.serialNumber,
+        calibrationExpiry: equipment.calibrationExpiry,
+        assignedOperatorId: equipment.assignedOperatorId,
+        status: equipment.status,
+        createdAt: equipment.createdAt,
+        updatedAt: equipment.updatedAt,
+        assignedOperator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          username: users.username,
+        }
+      })
       .from(equipment)
+      .leftJoin(users, eq(equipment.assignedOperatorId, users.id))
       .orderBy(asc(equipment.brand), asc(equipment.internalSerialNumber));
   }
 
@@ -509,10 +553,20 @@ export class DatabaseStorage implements IStorage {
     return equipmentEntry;
   }
 
-  async updateEquipment(id: string, updates: Partial<InsertEquipment>): Promise<Equipment> {
+  async updateEquipment(id: string, updates: any): Promise<Equipment> {
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (updates.equipmentType !== undefined) updateData.equipmentType = updates.equipmentType;
+    if (updates.brand !== undefined) updateData.brand = updates.brand;
+    if (updates.internalSerialNumber !== undefined) updateData.internalSerialNumber = updates.internalSerialNumber;
+    if (updates.serialNumber !== undefined) updateData.serialNumber = updates.serialNumber;
+    if (updates.calibrationExpiry !== undefined) updateData.calibrationExpiry = updates.calibrationExpiry;
+    if (updates.assignedOperatorId !== undefined) updateData.assignedOperatorId = updates.assignedOperatorId;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    
     const [equipmentEntry] = await db
       .update(equipment)
-      .set({ ...updates, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(equipment.id, id))
       .returning();
     return equipmentEntry;

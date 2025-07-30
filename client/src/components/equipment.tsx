@@ -436,7 +436,7 @@ export default function Equipment({ user }: EquipmentProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {equipmentList.map((equipment: Equipment) => (
+                  {equipmentList.map((equipment: any) => (
                     <TableRow key={equipment.id}>
                       <TableCell>{getEquipmentTypeLabel(equipment.equipmentType)}</TableCell>
                       <TableCell className="font-medium">{equipment.brand}</TableCell>
@@ -452,7 +452,13 @@ export default function Equipment({ user }: EquipmentProps) {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{getOperatorName(equipment.assignedOperatorId)}</TableCell>
+                      <TableCell>
+                        {equipment.assignedOperator ? 
+                          (equipment.assignedOperator.firstName && equipment.assignedOperator.lastName 
+                            ? `${equipment.assignedOperator.firstName} ${equipment.assignedOperator.lastName}`
+                            : equipment.assignedOperator.username) 
+                          : "Non assegnato"}
+                      </TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           equipment.status === 'active' ? 'bg-green-100 text-green-800' :
