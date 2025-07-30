@@ -603,10 +603,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertEquipmentSchema.parse(req.body);
       
-      // Convert calibrationExpiry to Date and handle null operator
+      // Convert calibrationExpiry to Date only if it exists and is not null (not for UT probes)
       const equipmentData = {
         ...validatedData,
-        calibrationExpiry: new Date(validatedData.calibrationExpiry),
+        calibrationExpiry: (validatedData.calibrationExpiry && validatedData.calibrationExpiry !== '') ? new Date(validatedData.calibrationExpiry) : null,
         assignedOperatorId: validatedData.assignedOperatorId || null,
       };
       
@@ -669,8 +669,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convert calibrationExpiry to Date if provided and handle null operator
       const updates: any = { ...validatedData };
-      if (validatedData.calibrationExpiry) {
+      if (validatedData.calibrationExpiry && validatedData.calibrationExpiry !== '') {
         updates.calibrationExpiry = new Date(validatedData.calibrationExpiry);
+      } else if (validatedData.calibrationExpiry === null || validatedData.calibrationExpiry === undefined || validatedData.calibrationExpiry === '') {
+        updates.calibrationExpiry = null;
       }
       if (validatedData.assignedOperatorId === null || validatedData.assignedOperatorId === undefined) {
         updates.assignedOperatorId = null;

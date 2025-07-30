@@ -284,9 +284,8 @@ export default function Equipment({ user }: EquipmentProps) {
   });
 
   const onSubmit = (data: z.infer<typeof equipmentFormSchema>) => {
-    const equipmentData: InsertEquipment = {
+    const equipmentData: any = {
       ...data,
-      calibrationExpiry: data.equipmentType === 'ut_probe' ? undefined : data.calibrationExpiry,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
       // Model field only for UT instruments and probes
       model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
@@ -295,6 +294,13 @@ export default function Equipment({ user }: EquipmentProps) {
       frequency: data.equipmentType === 'ut_probe' ? data.frequency : undefined,
       dimension: data.equipmentType === 'ut_probe' ? data.dimension : undefined,
     };
+
+    // Handle calibration expiry - null for UT probes, date string for others
+    if (data.equipmentType === 'ut_probe') {
+      equipmentData.calibrationExpiry = null;
+    } else {
+      equipmentData.calibrationExpiry = data.calibrationExpiry || null;
+    }
 
     if (editingEquipment) {
       updateEquipmentMutation.mutate({ id: editingEquipment.id, data: equipmentData });
