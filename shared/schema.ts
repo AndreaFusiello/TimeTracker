@@ -145,7 +145,7 @@ export const equipment = pgTable("equipment", {
   equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", "ultrasonic_instrument", "ut_probe"
   brand: varchar("brand").notNull(),
   model: varchar("model"), // Model field for ultrasonic instruments
-  internalSerialNumber: varchar("internal_serial_number").notNull().unique(),
+  internalSerialNumber: varchar("internal_serial_number"),
   serialNumber: varchar("serial_number").notNull(),
   // UT Probe specific fields
   angle: varchar("angle"), // Angle for UT probes (e.g., "45°", "60°")
@@ -166,6 +166,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   updatedAt: true,
 }).extend({
   calibrationExpiry: z.string().nullable().optional(), // Optional for UT probes, can be null
+  internalSerialNumber: z.string().optional(), // Optional internal serial number
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),

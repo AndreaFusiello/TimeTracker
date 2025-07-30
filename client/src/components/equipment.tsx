@@ -23,6 +23,7 @@ interface EquipmentProps {
 
 const equipmentFormSchema = insertEquipmentSchema.extend({
   calibrationExpiry: z.string().optional(),
+  internalSerialNumber: z.string().optional(),
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),
@@ -528,7 +529,7 @@ export default function Equipment({ user }: EquipmentProps) {
                       name="internalSerialNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Numero di Serie Interno</FormLabel>
+                          <FormLabel>Numero di Serie Interno (opzionale)</FormLabel>
                           <FormControl>
                             <Input placeholder="es. YK001" {...field} />
                           </FormControl>
@@ -814,7 +815,7 @@ export default function Equipment({ user }: EquipmentProps) {
                             : '-'}
                         </TableCell>
                       )}
-                      <TableCell>{equipment.internalSerialNumber}</TableCell>
+                      <TableCell>{equipment.internalSerialNumber || '-'}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
                       {/* Show probe-specific columns only if there are UT probes in filtered results */}
                       {filteredEquipment.some((eq: any) => eq.equipmentType === 'ut_probe') && (
