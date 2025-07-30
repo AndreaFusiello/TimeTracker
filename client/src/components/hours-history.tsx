@@ -43,7 +43,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
     workDate: "",
     jobNumber: "",
     jobName: "",
-    moduleNumber: "",
     activityType: "",
     hoursWorked: "",
     notes: "",
@@ -116,7 +115,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
         workDate: "",
         jobNumber: "",
         jobName: "",
-        moduleNumber: "",
         activityType: "",
         hoursWorked: "",
         notes: "",
@@ -156,7 +154,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
       workDate: new Date(entry.workDate).toISOString().split('T')[0], // Format for date input
       jobNumber: entry.jobNumber,
       jobName: entry.jobName || "",
-      moduleNumber: entry.moduleNumber || "",
       activityType: entry.activityType,
       hoursWorked: entry.hoursWorked.toString(),
       notes: entry.notes || "",
@@ -169,7 +166,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
       workDate: "",
       jobNumber: "",
       jobName: "",
-      moduleNumber: "",
       activityType: "",
       hoursWorked: "",
       notes: "",
@@ -185,7 +181,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
         workDate: editForm.workDate,
         jobNumber: editForm.jobNumber,
         jobName: editForm.jobName,
-        moduleNumber: editForm.moduleNumber,
         activityType: editForm.activityType,
         hoursWorked: parseFloat(editForm.hoursWorked),
         notes: editForm.notes,
@@ -461,7 +456,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                   <TableHead>Operatore</TableHead>
                   <TableHead>Commessa</TableHead>
                   <TableHead>Nome/Acronimo</TableHead>
-                  <TableHead>Modulo</TableHead>
                   <TableHead>Attività</TableHead>
                   <TableHead>Ore</TableHead>
                   <TableHead>Note</TableHead>
@@ -498,14 +492,7 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                             placeholder="Nome commessa"
                           />
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            value={editForm.moduleNumber || ''}
-                            onChange={(e) => setEditForm({ ...editForm, moduleNumber: e.target.value })}
-                            className="w-full"
-                            placeholder="93, 94..."
-                          />
-                        </TableCell>
+
                         <TableCell>
                           <Select 
                             value={editForm.activityType} 
@@ -569,7 +556,6 @@ export default function HoursHistory({ user }: HoursHistoryProps) {
                         <TableCell>{entry.operatorName}</TableCell>
                         <TableCell>{entry.jobNumber}</TableCell>
                         <TableCell>{entry.jobName || '-'}</TableCell>
-                        <TableCell>{entry.moduleNumber || '-'}</TableCell>
                         <TableCell>{entry.activityType}</TableCell>
                         <TableCell>{entry.hoursWorked}</TableCell>
                         <TableCell className="max-w-xs truncate" title={entry.notes || undefined}>

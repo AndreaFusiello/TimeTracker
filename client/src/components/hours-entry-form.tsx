@@ -23,7 +23,6 @@ const formSchema = z.object({
   workDate: z.string().min(1, "La data è obbligatoria"),
   jobNumber: z.string().min(1, "Il numero commessa è obbligatorio"),
   jobName: z.string().min(1, "Il nome commessa è obbligatorio"),
-  moduleNumber: z.string().optional(),
   activityType: z.enum([
     'NDE-MT/PT',
     'NDE-UT', 
@@ -64,7 +63,6 @@ export default function HoursEntryForm({ user }: HoursEntryFormProps) {
       workDate: new Date().toISOString().split('T')[0],
       jobNumber: "",
       jobName: "",
-      moduleNumber: "",
       activityType: undefined,
       repairCompany: "",
       hoursWorked: "",
@@ -180,19 +178,7 @@ export default function HoursEntryForm({ user }: HoursEntryFormProps) {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="moduleNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Numero Modulo (opzionale)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="es: 93, 94, 95..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}
