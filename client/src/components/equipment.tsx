@@ -54,7 +54,7 @@ export default function Equipment({ user }: EquipmentProps) {
       internalSerialNumber: "",
       serialNumber: "",
       calibrationExpiry: "",
-      assignedOperatorId: "",
+      assignedOperatorId: "unassigned",
       status: "active",
     },
   });
@@ -161,6 +161,7 @@ export default function Equipment({ user }: EquipmentProps) {
     const equipmentData: InsertEquipment = {
       ...data,
       calibrationExpiry: data.calibrationExpiry,
+      assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
     };
 
     if (editingEquipment) {
@@ -178,7 +179,7 @@ export default function Equipment({ user }: EquipmentProps) {
       internalSerialNumber: equipment.internalSerialNumber,
       serialNumber: equipment.serialNumber,
       calibrationExpiry: new Date(equipment.calibrationExpiry).toISOString().split('T')[0],
-      assignedOperatorId: equipment.assignedOperatorId || "",
+      assignedOperatorId: equipment.assignedOperatorId || "unassigned",
       status: equipment.status,
     });
     setIsDialogOpen(true);
@@ -337,7 +338,7 @@ export default function Equipment({ user }: EquipmentProps) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">Non assegnato</SelectItem>
+                              <SelectItem value="unassigned">Non assegnato</SelectItem>
                               {Array.isArray(operators) && operators.map((operator: any) => (
                                 <SelectItem key={operator.id} value={operator.id}>
                                   {operator.firstName && operator.lastName 
