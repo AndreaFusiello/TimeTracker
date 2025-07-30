@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2, Wrench, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Trash2, Wrench, Calendar, AlertTriangle, Upload, Download, Image, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -30,6 +30,8 @@ export default function Equipment({ user }: EquipmentProps) {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
 
   const { data: equipmentList, isLoading } = useQuery({
     queryKey: ["/api/equipment"],
@@ -157,6 +159,46 @@ export default function Equipment({ user }: EquipmentProps) {
     },
   });
 
+  const uploadFileMutation = useMutation({
+    mutationFn: async ({ equipmentId, formData }: { equipmentId: string, formData: FormData }) => {
+      const response = await fetch(`/api/equipment/${equipmentId}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/equipment"] });
+      toast({
+        title: "Successo",
+        description: "File caricati con successo",
+      });
+      setUploadDialogOpen(false);
+      setSelectedEquipment(null);
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Errore durante il caricamento dei file",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: z.infer<typeof equipmentFormSchema>) => {
     const equipmentData: InsertEquipment = {
       ...data,
@@ -188,6 +230,55 @@ export default function Equipment({ user }: EquipmentProps) {
   const handleDelete = (id: string) => {
     if (window.confirm("Sei sicuro di voler eliminare questa attrezzatura?")) {
       deleteEquipmentMutation.mutate(id);
+    }
+  };
+
+  const handleUpload = (equipment: any) => {
+    setSelectedEquipment(equipment);
+    setUploadDialogOpen(true);
+  };
+
+  const handleFileUpload = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
+    if (selectedEquipment && (formData.get('calibrationCertificate') || formData.get('equipmentPhoto'))) {
+      uploadFileMutation.mutate({ 
+        equipmentId: selectedEquipment.id, 
+        formData 
+      });
+    } else {
+      toast({
+        title: "Errore",
+        description: "Seleziona almeno un file da caricare",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownload = async (equipmentId: string, fileType: 'certificate' | 'photo') => {
+    try {
+      const response = await fetch(`/api/equipment/${equipmentId}/download/${fileType}`);
+      if (!response.ok) {
+        throw new Error('File non trovato');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${fileType}-${equipmentId}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile scaricare il file",
+        variant: "destructive",
+      });
     }
   };
 
@@ -406,6 +497,75 @@ export default function Equipment({ user }: EquipmentProps) {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* File Upload Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Carica File per {selectedEquipment?.brand} - {selectedEquipment?.internalSerialNumber}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleFileUpload} className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="calibrationCertificate" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Certificato di Calibrazione (PDF)
+                  </Label>
+                  <Input
+                    id="calibrationCertificate"
+                    name="calibrationCertificate"
+                    type="file"
+                    accept=".pdf"
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato supportato: PDF (max 10MB)
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="equipmentPhoto" className="flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Foto dello Strumento
+                  </Label>
+                  <Input
+                    id="equipmentPhoto"
+                    name="equipmentPhoto"
+                    type="file"
+                    accept="image/*"
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formati supportati: JPG, PNG, GIF (max 10MB)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setUploadDialogOpen(false);
+                    setSelectedEquipment(null);
+                  }}
+                >
+                  Annulla
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={uploadFileMutation.isPending}
+                  className="bg-primary hover:bg-blue-700"
+                >
+                  {uploadFileMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : null}
+                  Carica File
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -432,6 +592,8 @@ export default function Equipment({ user }: EquipmentProps) {
                     <TableHead>Scadenza Calibrazione</TableHead>
                     <TableHead>Operatore Assegnato</TableHead>
                     <TableHead>Stato</TableHead>
+                    <TableHead>Certificato</TableHead>
+                    <TableHead>Foto</TableHead>
                     {canManageEquipment && <TableHead>Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -469,6 +631,36 @@ export default function Equipment({ user }: EquipmentProps) {
                            equipment.status === 'maintenance' ? 'In Manutenzione' : 'Dismesso'}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        {equipment.calibrationCertificate ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(equipment.id, 'certificate')}
+                            className="flex items-center gap-1"
+                          >
+                            <Download className="h-3 w-3" />
+                            PDF
+                          </Button>
+                        ) : (
+                          <span className="text-gray-400 text-sm">Non disponibile</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {equipment.equipmentPhoto ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(equipment.id, 'photo')}
+                            className="flex items-center gap-1"
+                          >
+                            <Image className="h-3 w-3" />
+                            Foto
+                          </Button>
+                        ) : (
+                          <span className="text-gray-400 text-sm">Non disponibile</span>
+                        )}
+                      </TableCell>
                       {canManageEquipment && (
                         <TableCell>
                           <div className="flex space-x-2">
@@ -478,6 +670,14 @@ export default function Equipment({ user }: EquipmentProps) {
                               onClick={() => handleEdit(equipment)}
                             >
                               <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpload(equipment)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Upload className="h-4 w-4" />
                             </Button>
                             {user.role === 'admin' && (
                               <Button

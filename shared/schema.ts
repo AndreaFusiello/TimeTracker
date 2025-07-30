@@ -147,6 +147,8 @@ export const equipment = pgTable("equipment", {
   calibrationExpiry: timestamp("calibration_expiry").notNull(),
   assignedOperatorId: varchar("assigned_operator_id").references(() => users.id),
   status: varchar("status").notNull().default("active"), // active, maintenance, retired
+  calibrationCertificate: varchar("calibration_certificate"), // File path for calibration certificate
+  equipmentPhoto: varchar("equipment_photo"), // File path for equipment photo
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

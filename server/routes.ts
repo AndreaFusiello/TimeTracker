@@ -3,7 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema, insertEquipmentSchema, updateEquipmentSchema } from "@shared/schema";
+import { upload, deleteFile } from "./uploads";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
 
 // Simple auth middleware for local users
 function requireAuth(req: any, res: any, next: any) {
@@ -689,11 +692,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
+      // Get equipment info to delete associated files
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (equipment) {
+        if (equipment.calibrationCertificate) {
+          deleteFile(equipment.calibrationCertificate);
+        }
+        if (equipment.equipmentPhoto) {
+          deleteFile(equipment.equipmentPhoto);
+        }
+      }
+
       await storage.deleteEquipment(req.params.id);
       res.json({ message: "Equipment deleted successfully" });
     } catch (error) {
       console.error("Error deleting equipment:", error);
       res.status(500).json({ message: "Failed to delete equipment" });
+    }
+  });
+
+  // File upload route for equipment
+  app.post("/api/equipment/:id/upload", requireAuth, upload.fields([
+    { name: 'calibrationCertificate', maxCount: 1 },
+    { name: 'equipmentPhoto', maxCount: 1 }
+  ]), async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const equipmentId = req.params.id;
+      const equipment = await storage.getEquipmentById(equipmentId);
+      
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+
+      const updates: any = {};
+      
+      // Handle calibration certificate upload
+      if (req.files && req.files.calibrationCertificate) {
+        const certificateFile = req.files.calibrationCertificate[0];
+        // Delete old certificate if exists
+        if (equipment.calibrationCertificate) {
+          deleteFile(equipment.calibrationCertificate);
+        }
+        updates.calibrationCertificate = certificateFile.filename;
+      }
+
+      // Handle equipment photo upload
+      if (req.files && req.files.equipmentPhoto) {
+        const photoFile = req.files.equipmentPhoto[0];
+        // Delete old photo if exists
+        if (equipment.equipmentPhoto) {
+          deleteFile(equipment.equipmentPhoto);
+        }
+        updates.equipmentPhoto = photoFile.filename;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await storage.updateEquipment(equipmentId, updates);
+      }
+
+      res.json({ message: "Files uploaded successfully", updates });
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      res.status(500).json({ message: "Failed to upload files" });
+    }
+  });
+
+  // File download route
+  app.get("/api/equipment/:id/download/:fileType", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+
+      const equipment = await storage.getEquipmentById(req.params.id);
+      
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+
+      // Check permissions - operators can only access their assigned equipment
+      if (user?.role === 'operator' && equipment.assignedOperatorId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const fileType = req.params.fileType;
+      let fileName: string | null = null;
+      
+      if (fileType === 'certificate' && equipment.calibrationCertificate) {
+        fileName = equipment.calibrationCertificate;
+      } else if (fileType === 'photo' && equipment.equipmentPhoto) {
+        fileName = equipment.equipmentPhoto;
+      }
+
+      if (!fileName) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      const filePath = path.join(process.cwd(), 'uploads', fileName);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+
+      res.download(filePath);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      res.status(500).json({ message: "Failed to download file" });
     }
   });
 

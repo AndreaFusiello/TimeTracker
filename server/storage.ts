@@ -489,6 +489,8 @@ export class DatabaseStorage implements IStorage {
         calibrationExpiry: equipmentData.calibrationExpiry,
         assignedOperatorId: equipmentData.assignedOperatorId,
         status: equipmentData.status,
+        calibrationCertificate: equipmentData.calibrationCertificate,
+        equipmentPhoto: equipmentData.equipmentPhoto,
       })
       .returning();
     return equipmentEntry;
@@ -505,6 +507,8 @@ export class DatabaseStorage implements IStorage {
         calibrationExpiry: equipment.calibrationExpiry,
         assignedOperatorId: equipment.assignedOperatorId,
         status: equipment.status,
+        calibrationCertificate: equipment.calibrationCertificate,
+        equipmentPhoto: equipment.equipmentPhoto,
         createdAt: equipment.createdAt,
         updatedAt: equipment.updatedAt,
         assignedOperator: {
@@ -531,6 +535,8 @@ export class DatabaseStorage implements IStorage {
         calibrationExpiry: equipment.calibrationExpiry,
         assignedOperatorId: equipment.assignedOperatorId,
         status: equipment.status,
+        calibrationCertificate: equipment.calibrationCertificate,
+        equipmentPhoto: equipment.equipmentPhoto,
         createdAt: equipment.createdAt,
         updatedAt: equipment.updatedAt,
         assignedOperator: {
@@ -563,6 +569,8 @@ export class DatabaseStorage implements IStorage {
     if (updates.calibrationExpiry !== undefined) updateData.calibrationExpiry = updates.calibrationExpiry;
     if (updates.assignedOperatorId !== undefined) updateData.assignedOperatorId = updates.assignedOperatorId;
     if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.calibrationCertificate !== undefined) updateData.calibrationCertificate = updates.calibrationCertificate;
+    if (updates.equipmentPhoto !== undefined) updateData.equipmentPhoto = updates.equipmentPhoto;
     
     const [equipmentEntry] = await db
       .update(equipment)
