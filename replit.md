@@ -138,11 +138,32 @@ Preferred communication style: Simple, everyday language.
 - **Admin User Creation**: Administrators can now create new user accounts with username/password from the admin panel
 - **Simplified Login Flow**: Removed landing page; users go directly to login page when not authenticated
 
+### Dashboard Enhancements (July 2025)
+- **Monthly Hours Tracking**: Added monthly hours display in main dashboard statistics
+- **Overtime Categorization**: Implemented comprehensive Italian overtime tracking system:
+  - Straordinario Settimanale: Monday-Friday hours beyond 8h/day
+  - Straordinario Extra: Saturday hours (all hours counted)
+  - Straordinario Festivo: Sunday and Italian national holidays (all hours counted)
+- **Italian Holidays Integration**: Automatic recognition of 2025 Italian national holidays
+- **Enhanced Statistics**: 5-card layout with overtime breakdown section
+
+### Equipment Management System (July 2025)
+- **NDT Equipment Tracking**: Full equipment management system for non-destructive testing tools
+- **Magnetic Yoke Management**: Specialized tracking for magnetic yokes with:
+  - Brand and model information
+  - Internal serial number and manufacturer serial number
+  - Calibration expiry dates with warning system (30-day alerts)
+  - Operator assignment functionality
+- **Role-Based Access**: Operators see only assigned equipment, team leaders and admins manage all
+- **Status Tracking**: Active, maintenance, and retired equipment states
+- **Integration**: Equipment tab positioned between Reports and Administration
+
 ### Technical Improvements
 - **Session Management**: Fixed cookie security settings for development environment
 - **Hybrid Authentication**: Full support for both Replit Auth and local accounts
 - **Role-Based Permissions**: Enhanced permission system for editing and deletion operations
 - **Real-time Updates**: Improved cache invalidation for immediate UI updates
 - **Controlled Registration**: Removed public registration; only administrators can create new user accounts
+- **Database Schema**: Extended with equipment table and relations for comprehensive NDT asset tracking
 
 The application is designed for scalability and maintainability, with clear separation of concerns, type safety throughout the stack, and comprehensive error handling for production use.

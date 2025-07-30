@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema } from "@shared/schema";
+import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema, insertEquipmentSchema, updateEquipmentSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Simple auth middleware for local users
@@ -36,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Credenziali non valide" });
       }
       
-      req.session!.localUser = user;
+      (req.session as any).localUser = user;
       res.json(user);
     } catch (error) {
       console.error("Error logging in user:", error);
@@ -48,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/auth/logout-local', async (req, res) => {
-    req.session!.localUser = null;
+    (req.session as any).localUser = null;
     res.json({ message: "Logout effettuato" });
   });
 
@@ -538,6 +538,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting CSV:", error);
       res.status(500).json({ message: "Failed to export CSV" });
+    }
+  });
+
+  // Equipment routes
+  app.get("/api/equipment", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let equipment;
+      if (user.role === 'operator') {
+        // Operators can only see their assigned equipment
+        equipment = await storage.getEquipmentByOperator(userId);
+      } else {
+        // Team leaders and admins can see all equipment
+        equipment = await storage.getAllEquipment();
+      }
+      
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  app.post("/api/equipment", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const validatedData = insertEquipmentSchema.parse(req.body);
+      
+      // Convert calibrationExpiry to Date
+      const equipmentData = {
+        ...validatedData,
+        calibrationExpiry: new Date(validatedData.calibrationExpiry),
+      };
+      
+      const equipment = await storage.createEquipment(equipmentData);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error creating equipment:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create equipment" });
+    }
+  });
+
+  app.get("/api/equipment/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      const equipment = await storage.getEquipmentById(req.params.id);
+      
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+
+      // Check permissions
+      if (user?.role === 'operator' && equipment.assignedOperatorId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  app.put("/api/equipment/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const validatedData = updateEquipmentSchema.parse(req.body);
+      
+      // Convert calibrationExpiry to Date if provided
+      const updates: any = { ...validatedData };
+      if (validatedData.calibrationExpiry) {
+        updates.calibrationExpiry = new Date(validatedData.calibrationExpiry);
+      }
+      
+      const equipment = await storage.updateEquipment(req.params.id, updates);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error updating equipment:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update equipment" });
+    }
+  });
+
+  app.delete("/api/equipment/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteEquipment(req.params.id);
+      res.json({ message: "Equipment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting equipment:", error);
+      res.status(500).json({ message: "Failed to delete equipment" });
     }
   });
 

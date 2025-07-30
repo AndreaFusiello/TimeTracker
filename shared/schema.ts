@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql, relations } from 'drizzle-orm';
 import {
   index,
   jsonb,
@@ -136,6 +136,41 @@ export const insertJobOrderSchema = createInsertSchema(jobOrders).omit({
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Equipment management table for non-destructive testing equipment
+export const equipment = pgTable("equipment", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", etc.
+  brand: varchar("brand").notNull(),
+  internalSerialNumber: varchar("internal_serial_number").notNull().unique(),
+  serialNumber: varchar("serial_number").notNull(),
+  calibrationExpiry: timestamp("calibration_expiry").notNull(),
+  assignedOperatorId: varchar("assigned_operator_id").references(() => users.id),
+  status: varchar("status").notNull().default("active"), // active, maintenance, retired
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateEquipmentSchema = insertEquipmentSchema.partial();
+
+export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
+export type UpdateEquipment = z.infer<typeof updateEquipmentSchema>;
+export type Equipment = typeof equipment.$inferSelect;
+
+// Equipment relations
+export const equipmentRelations = relations(equipment, ({ one }) => ({
+  assignedOperator: one(users, {
+    fields: [equipment.assignedOperatorId],
+    references: [users.id],
+  }),
+}));
+
 export type InsertWorkHours = z.infer<typeof insertWorkHoursSchema>;
 export type WorkHours = typeof workHours.$inferSelect;
 export type InsertJobOrder = z.infer<typeof insertJobOrderSchema>;

@@ -2,6 +2,7 @@ import {
   users,
   workHours,
   jobOrders,
+  equipment,
   type User,
   type UpsertUser,
   type WorkHours,
@@ -11,6 +12,8 @@ import {
   type InsertJobOrder,
   type RegisterUser,
   type LoginUser,
+  type InsertEquipment,
+  type Equipment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
@@ -47,11 +50,22 @@ export interface IStorage {
   getJobOrders(): Promise<JobOrder[]>;
   getJobOrderByNumber(jobNumber: string): Promise<JobOrder | undefined>;
 
+  // Equipment operations
+  createEquipment(equipment: InsertEquipment): Promise<Equipment>;
+  getEquipmentByOperator(operatorId: string): Promise<Equipment[]>;
+  getAllEquipment(): Promise<Equipment[]>;
+  getEquipmentById(id: string): Promise<Equipment | undefined>;
+  updateEquipment(id: string, updates: Partial<InsertEquipment>): Promise<Equipment>;
+  deleteEquipment(id: string): Promise<void>;
+
   // Statistics
   getUserHoursStats(userId: string): Promise<{
     todayHours: number;
     weekHours: number;
     monthHours: number;
+    overtimeWeekly: number;
+    overtimeExtra: number;
+    overtimeHoliday: number;
   }>;
   getTeamHoursStats(teamId?: string): Promise<{
     totalMembers: number;
@@ -168,6 +182,7 @@ export class DatabaseStorage implements IStorage {
         workDate: workHours.workDate,
         jobNumber: workHours.jobNumber,
         jobName: workHours.jobName,
+        moduleNumber: workHours.moduleNumber,
         activityType: workHours.activityType,
         repairCompany: workHours.repairCompany,
         hoursWorked: workHours.hoursWorked,
@@ -206,6 +221,7 @@ export class DatabaseStorage implements IStorage {
         workDate: workHours.workDate,
         jobNumber: workHours.jobNumber,
         jobName: workHours.jobName,
+        moduleNumber: workHours.moduleNumber,
         activityType: workHours.activityType,
         repairCompany: workHours.repairCompany,
         hoursWorked: workHours.hoursWorked,
@@ -281,6 +297,7 @@ export class DatabaseStorage implements IStorage {
         workDate: workHours.workDate,
         jobNumber: workHours.jobNumber,
         jobName: workHours.jobName,
+        moduleNumber: workHours.moduleNumber,
         activityType: workHours.activityType,
         repairCompany: workHours.repairCompany,
         hoursWorked: workHours.hoursWorked,
@@ -289,12 +306,15 @@ export class DatabaseStorage implements IStorage {
         updatedAt: workHours.updatedAt,
         user: {
           id: users.id,
+          username: users.username,
+          password: users.password,
           email: users.email,
           firstName: users.firstName,
           lastName: users.lastName,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
           teamId: users.teamId,
+          authType: users.authType,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         }
@@ -455,6 +475,51 @@ export class DatabaseStorage implements IStorage {
       activeJobs: activeJobs.length,
       totalHours: monthHours.reduce((sum, entry) => sum + parseFloat(entry.hoursWorked), 0),
     };
+  }
+
+  // Equipment operations
+  async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
+    const [equipmentEntry] = await db
+      .insert(equipment)
+      .values(equipmentData)
+      .returning();
+    return equipmentEntry;
+  }
+
+  async getEquipmentByOperator(operatorId: string): Promise<Equipment[]> {
+    return await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.assignedOperatorId, operatorId))
+      .orderBy(asc(equipment.brand));
+  }
+
+  async getAllEquipment(): Promise<Equipment[]> {
+    return await db
+      .select()
+      .from(equipment)
+      .orderBy(asc(equipment.brand), asc(equipment.internalSerialNumber));
+  }
+
+  async getEquipmentById(id: string): Promise<Equipment | undefined> {
+    const [equipmentEntry] = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, id));
+    return equipmentEntry;
+  }
+
+  async updateEquipment(id: string, updates: Partial<InsertEquipment>): Promise<Equipment> {
+    const [equipmentEntry] = await db
+      .update(equipment)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(equipment.id, id))
+      .returning();
+    return equipmentEntry;
+  }
+
+  async deleteEquipment(id: string): Promise<void> {
+    await db.delete(equipment).where(eq(equipment.id, id));
   }
 }
 
