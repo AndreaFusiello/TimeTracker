@@ -99,6 +99,11 @@ export default function Procedures() {
     mutationFn: (id: string) => apiRequest(`/api/procedures/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/procedures"] });
+      console.log("Procedure deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting procedure:", error);
+      alert("Errore durante l'eliminazione della procedura. Verifica di avere i permessi necessari.");
     },
   });
 
@@ -214,6 +219,8 @@ export default function Procedures() {
   };
 
   const handleDelete = (id: string) => {
+    console.log("Attempting to delete procedure with id:", id);
+    console.log("Current user role:", (user as any)?.role);
     deleteProcedureMutation.mutate(id);
   };
 
