@@ -42,6 +42,8 @@ export default function Procedures() {
   const [editingProcedure, setEditingProcedure] = useState<any>(null);
   const [showSuperseded, setShowSuperseded] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const form = useForm<ProcedureFormData>({
     resolver: zodResolver(procedureFormSchema),
@@ -220,14 +222,31 @@ export default function Procedures() {
     }
   };
 
-  // Filter procedures based on user role and superseded toggle
+  // Filter procedures based on user role, superseded toggle, and search filters
   const filteredProcedures = (procedures as any[]).filter((procedure: any) => {
     if ((user as any)?.role === 'operator') {
-      return procedure.isCurrentRevision; // Operators see only current revisions
+      if (!procedure.isCurrentRevision) return false; // Operators see only current revisions
+    } else {
+      // Admins and team leaders see all, but can toggle superseded
+      if (!showSuperseded && !procedure.isCurrentRevision) {
+        return false;
+      }
     }
     
-    // Admins and team leaders see all, but can toggle superseded
-    if (!showSuperseded && !procedure.isCurrentRevision) {
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        procedure.procedureCode?.toLowerCase().includes(searchLower) ||
+        procedure.procedureName?.toLowerCase().includes(searchLower) ||
+        procedure.jobNumber?.toLowerCase().includes(searchLower) ||
+        procedure.description?.toLowerCase().includes(searchLower);
+      
+      if (!matchesSearch) return false;
+    }
+    
+    // Apply status filter
+    if (statusFilter !== "all" && procedure.status !== statusFilter) {
       return false;
     }
     
@@ -476,6 +495,54 @@ export default function Procedures() {
           )}
         </div>
       </div>
+
+      {/* Search and Filter Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtri di Ricerca</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="search">Ricerca</Label>
+              <Input
+                id="search"
+                placeholder="Cerca per codice, nome, commessa o descrizione..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="status-filter">Stato</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Filtra per stato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti gli stati</SelectItem>
+                  <SelectItem value="draft">Bozza</SelectItem>
+                  <SelectItem value="approved">Approvata</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                }}
+                className="w-full"
+              >
+                Pulisci Filtri
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Procedures Table */}
       <Card>
