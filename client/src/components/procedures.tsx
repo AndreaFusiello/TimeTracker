@@ -43,6 +43,7 @@ export default function Procedures() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [canSubmit, setCanSubmit] = useState(false);
 
   const form = useForm<ProcedureFormData>({
     resolver: zodResolver(procedureFormSchema),
@@ -178,6 +179,9 @@ export default function Procedures() {
     // Reset form and trigger validation
     form.reset(formData);
     
+    // Enable submit for editing
+    setCanSubmit(true);
+    
     // Force validation after a delay
     setTimeout(() => {
       form.trigger();
@@ -298,7 +302,15 @@ export default function Procedures() {
           {canManageProcedures && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
+                <Button 
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    setEditingProcedure(null);
+                    setCanSubmit(false);
+                    setSelectedFile(null);
+                    form.reset();
+                  }}
+                >
                   <Plus className="h-4 w-4" />
                   Nuova Procedura
                 </Button>
@@ -497,6 +509,7 @@ export default function Procedures() {
                           setDialogOpen(false);
                           setEditingProcedure(null);
                           setSelectedFile(null);
+                          setCanSubmit(false);
                           form.reset();
                         }}
                       >
@@ -506,7 +519,9 @@ export default function Procedures() {
                         type="submit" 
                         disabled={
                           createProcedureMutation.isPending || 
-                          updateProcedureMutation.isPending
+                          updateProcedureMutation.isPending ||
+                          (editingProcedure && !canSubmit) ||
+                          (!editingProcedure && !form.formState.isValid)
                         }
                       >
                         {createProcedureMutation.isPending || updateProcedureMutation.isPending ? (
