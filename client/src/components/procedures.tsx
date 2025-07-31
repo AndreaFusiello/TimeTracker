@@ -25,6 +25,7 @@ const procedureFormSchema = z.object({
   jobNumber: z.string().min(1, "Numero commessa richiesto"),
   procedureName: z.string().min(1, "Nome procedura richiesto"),
   procedureCode: z.string().min(1, "Codice procedura richiesto"),
+  procedureType: z.enum(['UT', 'MT', 'VT', 'PT', 'RT', 'ET', 'LT']),
   revision: z.string().default("Rev. 0"),
   isCurrentRevision: z.boolean().default(true),
   description: z.string().optional(),
@@ -44,6 +45,7 @@ export default function Procedures() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const form = useForm<ProcedureFormData>({
     resolver: zodResolver(procedureFormSchema),
@@ -51,6 +53,7 @@ export default function Procedures() {
       jobNumber: "",
       procedureName: "",
       procedureCode: "",
+      procedureType: "UT" as const,
       revision: "Rev. 0",
       isCurrentRevision: true,
       description: "",
@@ -170,6 +173,7 @@ export default function Procedures() {
       jobNumber: procedure.jobNumber,
       procedureName: procedure.procedureName,
       procedureCode: procedure.procedureCode,
+      procedureType: procedure.procedureType,
       revision: procedure.revision,
       isCurrentRevision: procedure.isCurrentRevision,
       description: procedure.description || "",
@@ -247,6 +251,11 @@ export default function Procedures() {
     
     // Apply status filter
     if (statusFilter !== "all" && procedure.status !== statusFilter) {
+      return false;
+    }
+    
+    // Apply type filter
+    if (typeFilter !== "all" && procedure.procedureType !== typeFilter) {
       return false;
     }
     
@@ -330,6 +339,49 @@ export default function Procedures() {
                             <FormLabel>Codice Procedura</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="es. PROC-MT-001" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="procedureType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tipologia Procedura</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleziona tipologia" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="UT">UT - Ultrasuoni</SelectItem>
+                                <SelectItem value="MT">MT - Magnetoscopia</SelectItem>
+                                <SelectItem value="VT">VT - Visivo</SelectItem>
+                                <SelectItem value="PT">PT - Liquidi Penetranti</SelectItem>
+                                <SelectItem value="RT">RT - Radiografia</SelectItem>
+                                <SelectItem value="ET">ET - Correnti Indotte</SelectItem>
+                                <SelectItem value="LT">LT - Test di Tenuta</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="revision"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Revisione</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="es. Rev. 0" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -502,16 +554,35 @@ export default function Procedures() {
           <CardTitle>Filtri di Ricerca</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label htmlFor="search">Ricerca</Label>
               <Input
                 id="search"
-                placeholder="Cerca per codice, nome, commessa o descrizione..."
+                placeholder="Cerca per codice, nome, commessa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="mt-1"
               />
+            </div>
+            
+            <div>
+              <Label htmlFor="type-filter">Tipologia</Label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Filtra per tipologia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le tipologie</SelectItem>
+                  <SelectItem value="UT">UT - Ultrasuoni</SelectItem>
+                  <SelectItem value="MT">MT - Magnetoscopia</SelectItem>
+                  <SelectItem value="VT">VT - Visivo</SelectItem>
+                  <SelectItem value="PT">PT - Liquidi Penetranti</SelectItem>
+                  <SelectItem value="RT">RT - Radiografia</SelectItem>
+                  <SelectItem value="ET">ET - Correnti Indotte</SelectItem>
+                  <SelectItem value="LT">LT - Test di Tenuta</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
@@ -534,6 +605,7 @@ export default function Procedures() {
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
+                  setTypeFilter("all");
                 }}
                 className="w-full"
               >
@@ -569,6 +641,7 @@ export default function Procedures() {
                   <TableHead>Commessa</TableHead>
                   <TableHead>Codice</TableHead>
                   <TableHead>Nome Procedura</TableHead>
+                  <TableHead>Tipologia</TableHead>
                   <TableHead>Revisione</TableHead>
                   <TableHead>Stato</TableHead>
                   <TableHead>Documento</TableHead>
@@ -584,6 +657,11 @@ export default function Procedures() {
                     <TableCell className="font-medium">{procedure.jobNumber}</TableCell>
                     <TableCell>{procedure.procedureCode}</TableCell>
                     <TableCell>{procedure.procedureName}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                        {procedure.procedureType}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {procedure.revision}

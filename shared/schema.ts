@@ -194,6 +194,7 @@ export const procedures = pgTable("procedures", {
   jobNumber: varchar("job_number").notNull(), // Job order number
   procedureName: varchar("procedure_name").notNull(), // Name of the procedure
   procedureCode: varchar("procedure_code").notNull(), // Unique procedure code
+  procedureType: varchar("procedure_type").notNull(), // Type: UT, MT, VT, PT, RT, ET, LT
   revision: varchar("revision").notNull().default("Rev. 0"), // Revision number (Rev. 0, Rev. 1, etc.)
   isCurrentRevision: boolean("is_current_revision").default(true), // Only one revision can be current
   description: text("description"), // Procedure description
@@ -215,6 +216,7 @@ export const insertProcedureSchema = createInsertSchema(procedures).omit({
   documentPath: z.string().optional(),
   approvedById: z.string().nullable().optional(),
   approvedAt: z.string().nullable().optional(),
+  procedureType: z.enum(['UT', 'MT', 'VT', 'PT', 'RT', 'ET', 'LT']),
 });
 
 export const updateProcedureSchema = insertProcedureSchema.partial();
