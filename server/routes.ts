@@ -865,6 +865,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Procedures Management Routes
+
+  // Get procedures (role-based access)
+  app.get("/api/procedures", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      let procedures;
+      if (user.role === 'admin' || user.role === 'team_leader') {
+        // Admins and team leaders see all procedures including superseded ones
+        procedures = await storage.getAllProcedures();
+      } else {
+        // Operators see only current revisions
+        procedures = await storage.getCurrentProcedures();
+      }
+      
+      res.json(procedures);
+    } catch (error) {
+      console.error("Error fetching procedures:", error);
+      res.status(500).json({ message: "Failed to fetch procedures" });
+    }
+  });
+
+  // Create new procedure
+  app.post("/api/procedures", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const procedureData = {
+        ...req.body,
+        createdById: userId,
+      };
+
+      const procedure = await storage.createProcedure(procedureData);
+      res.json(procedure);
+    } catch (error) {
+      console.error("Error creating procedure:", error);
+      res.status(500).json({ message: "Failed to create procedure" });
+    }
+  });
+
+  // Update procedure
+  app.put("/api/procedures/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const procedure = await storage.updateProcedure(req.params.id, req.body);
+      res.json(procedure);
+    } catch (error) {
+      console.error("Error updating procedure:", error);
+      res.status(500).json({ message: "Failed to update procedure" });
+    }
+  });
+
+  // Delete procedure
+  app.delete("/api/procedures/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      await storage.deleteProcedure(req.params.id);
+      res.json({ message: "Procedure deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting procedure:", error);
+      res.status(500).json({ message: "Failed to delete procedure" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

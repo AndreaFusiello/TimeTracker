@@ -3,6 +3,7 @@ import {
   workHours,
   jobOrders,
   equipment,
+  procedures,
   type User,
   type UpsertUser,
   type WorkHours,
@@ -14,6 +15,9 @@ import {
   type LoginUser,
   type InsertEquipment,
   type Equipment,
+  type Procedure,
+  type InsertProcedure,
+  type UpdateProcedure,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
@@ -73,6 +77,14 @@ export interface IStorage {
     activeJobs: number;
     totalHours: number;
   }>;
+
+  // Procedures operations  
+  createProcedure(procedureData: InsertProcedure): Promise<Procedure>;
+  getAllProcedures(): Promise<any[]>;
+  getCurrentProcedures(): Promise<any[]>;
+  getProcedureById(id: string): Promise<Procedure | undefined>;
+  updateProcedure(id: string, updates: any): Promise<Procedure>;
+  deleteProcedure(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -618,6 +630,133 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipment(id: string): Promise<void> {
     await db.delete(equipment).where(eq(equipment.id, id));
+  }
+  // Procedures management
+  async createProcedure(procedureData: InsertProcedure): Promise<Procedure> {
+    // If this is a new revision, mark all previous revisions as not current
+    if (procedureData.isCurrentRevision) {
+      await db
+        .update(procedures)
+        .set({ isCurrentRevision: false, status: 'superseded' })
+        .where(and(
+          eq(procedures.procedureCode, procedureData.procedureCode),
+          eq(procedures.isCurrentRevision, true)
+        ));
+    }
+
+    const [procedure] = await db
+      .insert(procedures)
+      .values({
+        ...procedureData,
+        approvedAt: procedureData.approvedAt ? new Date(procedureData.approvedAt) : null,
+      })
+      .returning();
+    return procedure;
+  }
+
+  async getAllProcedures(): Promise<any[]> {
+    return await db
+      .select({
+        id: procedures.id,
+        jobNumber: procedures.jobNumber,
+        procedureName: procedures.procedureName,
+        procedureCode: procedures.procedureCode,
+        revision: procedures.revision,
+        isCurrentRevision: procedures.isCurrentRevision,
+        description: procedures.description,
+        documentPath: procedures.documentPath,
+        status: procedures.status,
+        createdAt: procedures.createdAt,
+        updatedAt: procedures.updatedAt,
+        approvedAt: procedures.approvedAt,
+        createdBy: {
+          id: sql`creator.id`,
+          firstName: sql`creator.first_name`,
+          lastName: sql`creator.last_name`,
+          username: sql`creator.username`,
+        },
+        approvedBy: {
+          id: sql`approver.id`,
+          firstName: sql`approver.first_name`,
+          lastName: sql`approver.last_name`,
+          username: sql`approver.username`,
+        }
+      })
+      .from(procedures)
+      .leftJoin(sql`${users} as creator`, eq(procedures.createdById, sql`creator.id`))
+      .leftJoin(sql`${users} as approver`, eq(procedures.approvedById, sql`approver.id`))
+      .orderBy(asc(procedures.jobNumber), asc(procedures.procedureCode), desc(procedures.revision));
+  }
+
+  async getCurrentProcedures(): Promise<any[]> {
+    return await db
+      .select({
+        id: procedures.id,
+        jobNumber: procedures.jobNumber,
+        procedureName: procedures.procedureName,
+        procedureCode: procedures.procedureCode,
+        revision: procedures.revision,
+        isCurrentRevision: procedures.isCurrentRevision,
+        description: procedures.description,
+        documentPath: procedures.documentPath,
+        status: procedures.status,
+        createdAt: procedures.createdAt,
+        updatedAt: procedures.updatedAt,
+        approvedAt: procedures.approvedAt,
+        createdBy: {
+          id: sql`creator.id`,
+          firstName: sql`creator.first_name`,
+          lastName: sql`creator.last_name`,
+          username: sql`creator.username`,
+        },
+        approvedBy: {
+          id: sql`approver.id`,
+          firstName: sql`approver.first_name`,
+          lastName: sql`approver.last_name`,
+          username: sql`approver.username`,
+        }
+      })
+      .from(procedures)
+      .leftJoin(sql`${users} as creator`, eq(procedures.createdById, sql`creator.id`))
+      .leftJoin(sql`${users} as approver`, eq(procedures.approvedById, sql`approver.id`))
+      .where(eq(procedures.isCurrentRevision, true))
+      .orderBy(asc(procedures.jobNumber), asc(procedures.procedureCode));
+  }
+
+  async getProcedureById(id: string): Promise<Procedure | undefined> {
+    const [procedure] = await db
+      .select()
+      .from(procedures)
+      .where(eq(procedures.id, id));
+    return procedure;
+  }
+
+  async updateProcedure(id: string, updates: any): Promise<Procedure> {
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (updates.jobNumber !== undefined) updateData.jobNumber = updates.jobNumber;
+    if (updates.procedureName !== undefined) updateData.procedureName = updates.procedureName;
+    if (updates.procedureCode !== undefined) updateData.procedureCode = updates.procedureCode;
+    if (updates.revision !== undefined) updateData.revision = updates.revision;
+    if (updates.isCurrentRevision !== undefined) updateData.isCurrentRevision = updates.isCurrentRevision;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.documentPath !== undefined) updateData.documentPath = updates.documentPath;
+    if (updates.approvedById !== undefined) updateData.approvedById = updates.approvedById;
+    if (updates.approvedAt !== undefined) updateData.approvedAt = updates.approvedAt;
+    if (updates.status !== undefined) updateData.status = updates.status;
+
+    const [procedure] = await db
+      .update(procedures)
+      .set(updateData)
+      .where(eq(procedures.id, id))
+      .returning();
+    return procedure;
+  }
+
+  async deleteProcedure(id: string): Promise<void> {
+    await db
+      .delete(procedures)
+      .where(eq(procedures.id, id));
   }
 }
 

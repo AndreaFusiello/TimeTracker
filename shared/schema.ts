@@ -188,6 +188,41 @@ export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
 export type UpdateEquipment = z.infer<typeof updateEquipmentSchema>;
 export type Equipment = typeof equipment.$inferSelect;
 
+// Procedures management table for job order procedures with revision control
+export const procedures = pgTable("procedures", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobNumber: varchar("job_number").notNull(), // Job order number
+  procedureName: varchar("procedure_name").notNull(), // Name of the procedure
+  procedureCode: varchar("procedure_code").notNull(), // Unique procedure code
+  revision: varchar("revision").notNull().default("Rev. 0"), // Revision number (Rev. 0, Rev. 1, etc.)
+  isCurrentRevision: boolean("is_current_revision").default(true), // Only one revision can be current
+  description: text("description"), // Procedure description
+  documentPath: varchar("document_path"), // Path to uploaded procedure document
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  approvedById: varchar("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  status: varchar("status").notNull().default("draft"), // draft, approved, superseded
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProcedureSchema = createInsertSchema(procedures).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  description: z.string().optional(),
+  documentPath: z.string().optional(),
+  approvedById: z.string().nullable().optional(),
+  approvedAt: z.string().nullable().optional(),
+});
+
+export const updateProcedureSchema = insertProcedureSchema.partial();
+
+export type InsertProcedure = z.infer<typeof insertProcedureSchema>;
+export type UpdateProcedure = z.infer<typeof updateProcedureSchema>;
+export type Procedure = typeof procedures.$inferSelect;
+
 // Equipment relations
 export const equipmentRelations = relations(equipment, ({ one }) => ({
   assignedOperator: one(users, {
