@@ -95,6 +95,10 @@ export default function Procedures() {
   });
 
   const onSubmit = async (data: ProcedureFormData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    console.log("Selected file:", selectedFile);
+    
     try {
       const procedureData = {
         ...data,
@@ -448,7 +452,11 @@ export default function Procedures() {
                         type="submit" 
                         disabled={createProcedureMutation.isPending || updateProcedureMutation.isPending}
                       >
-                        {editingProcedure ? "Aggiorna" : "Crea"}
+                        {createProcedureMutation.isPending || updateProcedureMutation.isPending ? (
+                          "Caricamento..."
+                        ) : (
+                          editingProcedure ? "Aggiorna" : "Crea"
+                        )}
                       </Button>
                     </DialogFooter>
                   </form>
