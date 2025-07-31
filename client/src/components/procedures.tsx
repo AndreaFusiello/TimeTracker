@@ -68,6 +68,9 @@ export default function Procedures() {
       setDialogOpen(false);
       form.reset();
     },
+    onError: (error) => {
+      console.error("Error creating procedure:", error);
+    },
   });
 
   // Update procedure mutation
