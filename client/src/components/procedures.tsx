@@ -159,6 +159,7 @@ export default function Procedures() {
 
   const handleEdit = (procedure: any) => {
     setEditingProcedure(procedure);
+    setSelectedFile(null); // Reset file selection
     
     // Reset form with existing procedure data
     const formData = {
@@ -174,12 +175,15 @@ export default function Procedures() {
     console.log("Editing procedure data:", procedure);
     console.log("Form data being set:", formData);
     
+    // Reset form and trigger validation
     form.reset(formData);
     
-    // Force validation trigger after form reset
+    // Force validation after a delay
     setTimeout(() => {
       form.trigger();
-    }, 100);
+      console.log("Form state after trigger:", form.formState);
+      console.log("Form values after trigger:", form.getValues());
+    }, 200);
     
     setDialogOpen(true);
   };
@@ -503,7 +507,7 @@ export default function Procedures() {
                         disabled={
                           createProcedureMutation.isPending || 
                           updateProcedureMutation.isPending ||
-                          !form.formState.isValid
+                          (!form.formState.isValid && Object.keys(form.formState.errors).length > 0)
                         }
                       >
                         {createProcedureMutation.isPending || updateProcedureMutation.isPending ? (
@@ -514,9 +518,17 @@ export default function Procedures() {
                       </Button>
                       {/* Debug info - remove in production */}
                       {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          Form valid: {form.formState.isValid ? 'Si' : 'No'} | 
-                          Errors: {Object.keys(form.formState.errors).length}
+                        <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+                          <div>Form valid: {form.formState.isValid ? 'Si' : 'No'}</div>
+                          <div>Errors: {Object.keys(form.formState.errors).length}</div>
+                          {Object.keys(form.formState.errors).length > 0 && (
+                            <div>
+                              Errori: {Object.keys(form.formState.errors).join(', ')}
+                            </div>
+                          )}
+                          <div>
+                            Valori: {JSON.stringify(form.getValues(), null, 2)}
+                          </div>
                         </div>
                       )}
                     </DialogFooter>
