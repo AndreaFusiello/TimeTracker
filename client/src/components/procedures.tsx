@@ -220,7 +220,9 @@ export default function Procedures() {
 
   const handleDelete = (id: string) => {
     console.log("Attempting to delete procedure with id:", id);
+    console.log("Current user:", user);
     console.log("Current user role:", (user as any)?.role);
+    console.log("Is admin?", (user as any)?.role === 'admin');
     deleteProcedureMutation.mutate(id);
   };
 

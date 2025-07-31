@@ -1021,12 +1021,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = user.id;
       }
       
-      console.log("Delete procedure attempt - User:", user?.username, "Role:", user?.role);
+      console.log("Delete procedure attempt - User ID:", userId);
+      console.log("Delete procedure attempt - User object:", user);
+      console.log("Delete procedure attempt - User role:", user?.role);
+      console.log("Delete procedure attempt - Role type:", typeof user?.role);
+      console.log("Delete procedure attempt - Is admin?", user?.role === 'admin');
       
       if (!user || user.role !== 'admin') {
-        console.log("Delete procedure denied - User role:", user?.role, "Required: admin");
+        console.log("Delete procedure DENIED - User role:", user?.role, "Required: admin");
         return res.status(403).json({ message: "Insufficient permissions" });
       }
+      
+      console.log("Delete procedure APPROVED - proceeding with deletion");
 
       // Get procedure to delete associated files
       const procedure = await storage.getProcedureById(req.params.id);
