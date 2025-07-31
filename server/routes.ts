@@ -865,6 +865,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update complete user data (admin only)
+  app.put("/api/users/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { username, password, firstName, lastName, email, role } = req.body;
+
+      // Validate required fields
+      if (!username || !firstName || !lastName) {
+        return res.status(400).json({ message: "Username, nome e cognome sono obbligatori" });
+      }
+
+      // Validate role
+      if (role && !['operator', 'team_leader', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Ruolo non valido" });
+      }
+
+      const updateData: any = {
+        username,
+        firstName,
+        lastName,
+        email: email || null,
+        role: role || 'operator'
+      };
+
+      // Include password only if provided
+      if (password && password.trim() !== '') {
+        updateData.password = password;
+      }
+
+      const updatedUser = await storage.updateUser(req.params.id, updateData);
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      if (error.code === '23505') {
+        if (error.constraint === 'users_email_unique') {
+          return res.status(400).json({ message: "Email già utilizzata da un altro utente" });
+        }
+        if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ message: "Username già utilizzato da un altro utente" });
+        }
+      }
+      res.status(500).json({ message: "Errore nell'aggiornamento dell'utente" });
+    }
+  });
+
   // Procedures Management Routes
 
   // Get procedures (role-based access)

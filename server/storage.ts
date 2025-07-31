@@ -29,6 +29,14 @@ export interface IStorage {
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User>;
   updateUserStatus(id: string, enabled: boolean): Promise<User>;
+  updateUser(id: string, userData: {
+    username?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string | null;
+    role?: string;
+  }): Promise<User>;
   deleteUser(id: string): Promise<void>;
   
   // Local auth operations
@@ -126,6 +134,33 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ enabled, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, userData: {
+    username?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string | null;
+    role?: string;
+  }): Promise<User> {
+    const updateData: any = { 
+      ...userData, 
+      updatedAt: new Date() 
+    };
+
+    // Hash password if provided
+    if (userData.password) {
+      const bcrypt = await import('bcrypt');
+      updateData.password = await bcrypt.hash(userData.password, 10);
+    }
+
+    const [user] = await db
+      .update(users)
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return user;

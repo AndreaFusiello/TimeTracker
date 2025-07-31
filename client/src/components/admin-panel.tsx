@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { UserPlus, Edit, UserX, Save, Trash2, Plus, X } from "lucide-react";
+import { UserPlus, Edit, UserX, Save, Trash2, Plus, X, Edit3, Check, XCircle } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface AdminPanelProps {
@@ -30,7 +30,16 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   });
 
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const [newUser, setNewUser] = useState({
+    username: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'operator' as 'operator' | 'team_leader' | 'admin',
+  });
+  const [editUserData, setEditUserData] = useState({
     username: '',
     password: '',
     firstName: '',
@@ -69,6 +78,38 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       toast({
         title: "Errore",
         description: "Impossibile aggiornare il ruolo utente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateUser = useMutation({
+    mutationFn: async ({ userId, userData }: { userId: string; userData: any }) => {
+      return await apiRequest("PUT", `/api/users/${userId}`, userData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successo",
+        description: "Dati utente aggiornati con successo",
+      });
+      setEditingUser(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Non autorizzato",
+          description: "Stai per essere reindirizzato alla pagina di login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare i dati utente",
         variant: "destructive",
       });
     },
@@ -215,6 +256,56 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       role: 'operator',
     });
     setShowCreateUser(false);
+  };
+
+  const handleEditUser = (userItem: any) => {
+    setEditingUser(userItem);
+    setEditUserData({
+      username: userItem.username || '',
+      password: '', // Password is always empty for security
+      firstName: userItem.firstName || '',
+      lastName: userItem.lastName || '',
+      email: userItem.email || '',
+      role: userItem.role || 'operator',
+    });
+  };
+
+  const handleSaveUser = () => {
+    if (!editUserData.username || !editUserData.firstName || !editUserData.lastName) {
+      toast({
+        title: "Errore",
+        description: "Username, nome e cognome sono obbligatori",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updateData: any = {
+      username: editUserData.username,
+      firstName: editUserData.firstName,
+      lastName: editUserData.lastName,
+      email: editUserData.email,
+      role: editUserData.role,
+    };
+
+    // Only include password if it's not empty
+    if (editUserData.password.trim() !== '') {
+      updateData.password = editUserData.password;
+    }
+
+    updateUser.mutate({ userId: editingUser.id, userData: updateData });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditUserData({
+      username: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      role: 'operator',
+    });
   };
 
   const handleSaveSettings = () => {
@@ -415,63 +506,148 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
+                    <TableHead>Utente</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Ruolo</TableHead>
                     <TableHead>Ultimo Accesso</TableHead>
-                    <TableHead>Stato</TableHead>
                     <TableHead>Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(users as User[]).map((userItem: User) => (
-                    <TableRow key={userItem.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0">
-                            <div className="h-10 w-10 rounded-full bg-primary bg-opacity-10 flex items-center justify-center">
-                              <span className="text-primary font-medium text-sm">
-                                {getUserInitials(userItem)}
-                              </span>
+                  {(users as User[]).map((userItem: User) => 
+                    editingUser?.id === userItem.id ? (
+                      // Edit mode row
+                      <TableRow key={userItem.id} className="bg-blue-50">
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-500 mb-1">Username</div>
+                            <Input
+                              value={editUserData.username}
+                              onChange={(e) => setEditUserData(prev => ({ ...prev, username: e.target.value }))}
+                              placeholder="Username"
+                              className="text-sm"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Nome</div>
+                                <Input
+                                  value={editUserData.firstName}
+                                  onChange={(e) => setEditUserData(prev => ({ ...prev, firstName: e.target.value }))}
+                                  placeholder="Nome"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Cognome</div>
+                                <Input
+                                  value={editUserData.lastName}
+                                  onChange={(e) => setEditUserData(prev => ({ ...prev, lastName: e.target.value }))}
+                                  placeholder="Cognome"
+                                  className="text-sm"
+                                />
+                              </div>
                             </div>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {getUserDisplayName(userItem)}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{userItem.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(userItem.role)}>
-                          {getRoleLabel(userItem.role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {userItem.updatedAt 
-                          ? new Date(userItem.updatedAt).toLocaleDateString('it-IT')
-                          : 'Mai'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={userItem.enabled ?? true}
-                            onCheckedChange={() => handleToggleUserStatus(userItem.id, userItem.enabled ?? true, getUserDisplayName(userItem))}
-                            disabled={userItem.id === user.id || updateUserStatus.isPending}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="email"
+                            value={editUserData.email}
+                            onChange={(e) => setEditUserData(prev => ({ ...prev, email: e.target.value }))}
+                            placeholder="Email"
+                            className="text-sm"
                           />
-                          <span className="text-sm">
-                            {userItem.enabled ?? true ? 'Abilitato' : 'Disabilitato'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={editUserData.role}
+                            onValueChange={(value) => setEditUserData(prev => ({ ...prev, role: value as any }))}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="operator">Operatore</SelectItem>
+                              <SelectItem value="team_leader">Caposquadra</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-xs text-gray-500">Nuova Password</div>
+                            <Input
+                              type="password"
+                              value={editUserData.password}
+                              onChange={(e) => setEditUserData(prev => ({ ...prev, password: e.target.value }))}
+                              placeholder="Lascia vuoto per non modificare"
+                              className="text-sm"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSaveUser}
+                              disabled={updateUser.isPending}
+                              className="text-green-600 hover:text-green-700"
+                              title="Salva modifiche"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCancelEdit}
+                              disabled={updateUser.isPending}
+                              className="text-red-600 hover:text-red-700"
+                              title="Annulla modifiche"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      // Normal view row
+                      <TableRow key={userItem.id}>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0">
+                              <div className="h-10 w-10 rounded-full bg-primary bg-opacity-10 flex items-center justify-center">
+                                <span className="text-primary font-medium text-sm">
+                                  {getUserInitials(userItem)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {getUserDisplayName(userItem)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                @{userItem.username}
+                              </div>
+                              <div className="text-xs">
+                                <Badge variant={getRoleBadgeVariant(userItem.role)} className="text-xs">
+                                  {getRoleLabel(userItem.role)}
+                                </Badge>
+                                {userItem.enabled === false && (
+                                  <Badge variant="destructive" className="ml-1 text-xs">Disabilitato</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {userItem.email || <span className="text-gray-400">Non specificata</span>}
+                        </TableCell>
+                        <TableCell>
                           <Select 
                             value={userItem.role} 
                             onValueChange={(newRole) => handleRoleChange(userItem.id, newRole)}
-                            disabled={updateUserRole.isPending}
+                            disabled={updateUserRole.isPending || editingUser !== null}
                           >
                             <SelectTrigger className="w-32">
                               <SelectValue />
@@ -482,19 +658,48 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteUser(userItem.id, getUserDisplayName(userItem))}
-                            className="text-destructive hover:text-destructive"
-                            disabled={userItem.id === user.id || deleteUser.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {userItem.updatedAt 
+                            ? new Date(userItem.updatedAt).toLocaleDateString('it-IT')
+                            : 'Mai'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditUser(userItem)}
+                              disabled={editingUser !== null}
+                              className="text-blue-600 hover:text-blue-700"
+                              title="Modifica utente"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                            {userItem.id !== user.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteUser(userItem.id, getUserDisplayName(userItem))}
+                                className="text-destructive hover:text-destructive"
+                                disabled={deleteUser.isPending || editingUser !== null}
+                                title="Elimina utente"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Switch
+                              checked={userItem.enabled ?? true}
+                              onCheckedChange={() => handleToggleUserStatus(userItem.id, userItem.enabled ?? true, getUserDisplayName(userItem))}
+                              disabled={userItem.id === user.id || updateUserStatus.isPending || editingUser !== null}
+                              title={userItem.enabled !== false ? 'Disabilita utente' : 'Abilita utente'}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )}
                 </TableBody>
               </Table>
             </div>
