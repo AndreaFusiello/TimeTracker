@@ -137,6 +137,7 @@ export default function Procedures() {
           if (response.ok) {
             queryClient.invalidateQueries({ queryKey: ["/api/procedures"] });
             setDialogOpen(false);
+            setEditingProcedure(null);
             form.reset();
             setSelectedFile(null);
           }
@@ -402,35 +403,32 @@ export default function Procedures() {
 
                     {/* File Upload Section */}
                     <div className="space-y-2">
-                      <Label>Documento Procedura</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="document"
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-1"
-                        >
-                          <Upload className="h-4 w-4" />
-                          Carica
-                        </Button>
-                      </div>
+                      <Label htmlFor="document">Documento Procedura (opzionale)</Label>
+                      <Input
+                        id="document"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      />
                       {selectedFile && (
-                        <p className="text-sm text-muted-foreground">
-                          File selezionato: {selectedFile.name}
-                        </p>
+                        <div className="flex items-center gap-2 p-2 bg-green-50 rounded-md">
+                          <Upload className="h-4 w-4 text-green-600" />
+                          <p className="text-sm text-green-700">
+                            File selezionato: {selectedFile.name}
+                          </p>
+                        </div>
                       )}
-                      {editingProcedure?.documentPath && (
-                        <p className="text-sm text-green-600">
-                          Documento esistente: {editingProcedure.documentPath.split('/').pop()}
-                        </p>
+                      {editingProcedure?.documentPath && !selectedFile && (
+                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <p className="text-sm text-blue-700">
+                            Documento esistente: {editingProcedure.documentPath.split('/').pop()}
+                          </p>
+                        </div>
                       )}
+                      <p className="text-xs text-muted-foreground">
+                        Formati supportati: PDF, DOC, DOCX (max 10MB)
+                      </p>
                     </div>
 
                     <DialogFooter>
@@ -440,6 +438,7 @@ export default function Procedures() {
                         onClick={() => {
                           setDialogOpen(false);
                           setEditingProcedure(null);
+                          setSelectedFile(null);
                           form.reset();
                         }}
                       >
