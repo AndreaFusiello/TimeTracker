@@ -506,8 +506,7 @@ export default function Procedures() {
                         type="submit" 
                         disabled={
                           createProcedureMutation.isPending || 
-                          updateProcedureMutation.isPending ||
-                          (!form.formState.isValid && Object.keys(form.formState.errors).length > 0)
+                          updateProcedureMutation.isPending
                         }
                       >
                         {createProcedureMutation.isPending || updateProcedureMutation.isPending ? (
