@@ -309,7 +309,7 @@ export default function Procedures() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Approvata da</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Seleziona approvatore" />
