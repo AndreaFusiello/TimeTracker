@@ -37,6 +37,15 @@ const fileFilter = (req: any, file: any, cb: any) => {
     } else {
       cb(new Error('Solo file immagine sono permessi per le foto degli strumenti'), false);
     }
+  } else if (file.fieldname === 'document') {
+    // Allow PDF and DOC files for procedure documents
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo file PDF, DOC o DOCX sono permessi per i documenti delle procedure'), false);
+    }
   } else {
     cb(new Error('Campo file non riconosciuto'), false);
   }

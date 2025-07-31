@@ -21,15 +21,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
-const procedureFormSchema = insertProcedureSchema.omit({
-  id: true,
-  createdAt: true, 
-  updatedAt: true,
-  createdById: true,
-  documentPath: true
-}).extend({
-  approvedAt: z.string().optional(),
-  approvedById: z.string().optional()
+const procedureFormSchema = z.object({
+  jobNumber: z.string().min(1, "Numero commessa richiesto"),
+  procedureName: z.string().min(1, "Nome procedura richiesto"),
+  procedureCode: z.string().min(1, "Codice procedura richiesto"),
+  revision: z.string().default("Rev. 0"),
+  isCurrentRevision: z.boolean().default(true),
+  description: z.string().optional(),
+  status: z.enum(["draft", "approved"]).default("draft"),
+  approvedById: z.string().optional(),
+  approvedAt: z.string().optional()
 });
 
 type ProcedureFormData = z.infer<typeof procedureFormSchema>;
