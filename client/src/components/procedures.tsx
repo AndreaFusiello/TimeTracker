@@ -21,8 +21,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
-const procedureFormSchema = insertProcedureSchema.extend({
+const procedureFormSchema = insertProcedureSchema.omit({
+  id: true,
+  createdAt: true, 
+  updatedAt: true,
+  createdById: true,
+  documentPath: true
+}).extend({
   approvedAt: z.string().optional(),
+  approvedById: z.string().optional()
 });
 
 type ProcedureFormData = z.infer<typeof procedureFormSchema>;
@@ -277,7 +284,9 @@ export default function Procedures() {
                 </DialogHeader>
 
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                    console.log("Form validation errors:", errors);
+                  })} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
