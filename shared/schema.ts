@@ -142,11 +142,12 @@ export type User = typeof users.$inferSelect;
 // Equipment management table for non-destructive testing equipment
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", "ultrasonic_instrument", "ut_probe"
+  equipmentType: varchar("equipment_type").notNull(), // "magnetic_yoke", "visual", "ultrasonic_instrument", "ut_probe", "calibration_blocks", "various"
   brand: varchar("brand").notNull(),
   model: varchar("model"), // Model field for ultrasonic instruments
   internalSerialNumber: varchar("internal_serial_number"),
   serialNumber: varchar("serial_number").notNull(),
+  site: varchar("site").notNull(), // Site location (e.g., "Cimolai Monfalcone")
   // UT Probe specific fields
   angle: varchar("angle"), // Angle for UT probes (e.g., "45°", "60°")
   frequency: varchar("frequency"), // Frequency for UT probes (e.g., "2.25MHz", "5MHz")
@@ -167,6 +168,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
 }).extend({
   calibrationExpiry: z.string().nullable().optional(), // Optional for UT probes, can be null
   internalSerialNumber: z.string().optional(), // Optional internal serial number
+  site: z.string().min(1, "Il sito è obbligatorio"), // Site is required
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),
@@ -175,6 +177,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
 
 export const updateEquipmentSchema = insertEquipmentSchema.partial().extend({
   calibrationExpiry: z.string().nullable().optional(),
+  site: z.string().optional(),
   model: z.string().optional(),
   angle: z.string().optional(),
   frequency: z.string().optional(),

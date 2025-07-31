@@ -29,8 +29,9 @@ const equipmentFormSchema = insertEquipmentSchema.extend({
   frequency: z.string().optional(),
   dimension: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // Calibration expiry is required for MT and UT instruments, but not for UT probes
-  if (data.equipmentType !== 'ut_probe' && (!data.calibrationExpiry || data.calibrationExpiry === '')) {
+  // Calibration expiry is required for equipment that needs calibration (not UT probes, calibration blocks, or various)
+  const noCalibrationTypes = ['ut_probe', 'calibration_blocks', 'various'];
+  if (!noCalibrationTypes.includes(data.equipmentType) && (!data.calibrationExpiry || data.calibrationExpiry === '')) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "La data di scadenza calibrazione è obbligatoria per questo tipo di attrezzatura",
@@ -46,7 +47,7 @@ export default function Equipment({ user }: EquipmentProps) {
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'mt' | 'ut' | 'sonde'>('mt');
+  const [activeTab, setActiveTab] = useState<'mt' | 'visual' | 'ut' | 'sonde' | 'blocks' | 'various'>('mt');
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: equipmentList, isLoading } = useQuery({
@@ -67,8 +68,11 @@ export default function Equipment({ user }: EquipmentProps) {
   const getDefaultEquipmentType = () => {
     switch (activeTab) {
       case 'mt': return 'magnetic_yoke';
+      case 'visual': return 'visual';
       case 'ut': return 'ultrasonic_instrument';
       case 'sonde': return 'ut_probe';
+      case 'blocks': return 'calibration_blocks';
+      case 'various': return 'various';
       default: return 'magnetic_yoke';
     }
   };
@@ -81,6 +85,7 @@ export default function Equipment({ user }: EquipmentProps) {
       model: "",
       internalSerialNumber: "",
       serialNumber: "",
+      site: "",
       angle: "",
       frequency: "",
       dimension: "",
@@ -110,10 +115,16 @@ export default function Equipment({ user }: EquipmentProps) {
     switch (type) {
       case 'magnetic_yoke':
         return 'MT';
+      case 'visual':
+        return 'VT';
       case 'ultrasonic_instrument':
         return 'UT';
       case 'ut_probe':
         return 'UT - Sonde';
+      case 'calibration_blocks':
+        return 'Blocchi';
+      case 'various':
+        return 'Vari';
       default:
         return type;
     }
@@ -125,14 +136,18 @@ export default function Equipment({ user }: EquipmentProps) {
   const filteredEquipment = equipmentList && Array.isArray(equipmentList) ? equipmentList.filter((equipment: any) => {
     const matchesTab = 
       (activeTab === 'mt' && equipment.equipmentType === 'magnetic_yoke') ||
+      (activeTab === 'visual' && equipment.equipmentType === 'visual') ||
       (activeTab === 'ut' && equipment.equipmentType === 'ultrasonic_instrument') ||
-      (activeTab === 'sonde' && equipment.equipmentType === 'ut_probe');
+      (activeTab === 'sonde' && equipment.equipmentType === 'ut_probe') ||
+      (activeTab === 'blocks' && equipment.equipmentType === 'calibration_blocks') ||
+      (activeTab === 'various' && equipment.equipmentType === 'various');
     
     const matchesSearch = searchTerm === "" || 
       equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipment.internalSerialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (equipment.internalSerialNumber && equipment.internalSerialNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       equipment.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (equipment.model && equipment.model.toLowerCase().includes(searchTerm.toLowerCase()));
+      (equipment.model && equipment.model.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (equipment.site && equipment.site.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesTab && matchesSearch;
   }) : [];
@@ -140,8 +155,11 @@ export default function Equipment({ user }: EquipmentProps) {
   const getTabTitle = (tab: string) => {
     switch (tab) {
       case 'mt': return 'Magnetoscopia';
+      case 'visual': return 'Visivo';
       case 'ut': return 'Ultrasuoni';
       case 'sonde': return 'Sonde UT';
+      case 'blocks': return 'Blocchi di Calibrazione';
+      case 'various': return 'Vari';
       default: return '';
     }
   };
@@ -316,8 +334,9 @@ export default function Equipment({ user }: EquipmentProps) {
       equipmentType: equipment.equipmentType,
       brand: equipment.brand,
       model: equipment.model || "",
-      internalSerialNumber: equipment.internalSerialNumber,
+      internalSerialNumber: equipment.internalSerialNumber || "",
       serialNumber: equipment.serialNumber,
+      site: equipment.site || "",
       angle: equipment.angle || "",
       frequency: equipment.frequency || "",
       dimension: equipment.dimension || "",
@@ -402,6 +421,7 @@ export default function Equipment({ user }: EquipmentProps) {
                     model: "",
                     internalSerialNumber: "",
                     serialNumber: "",
+                    site: "",
                     angle: "",
                     frequency: "",
                     dimension: "",
@@ -439,8 +459,11 @@ export default function Equipment({ user }: EquipmentProps) {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="magnetic_yoke">MT - Magnetoscopia</SelectItem>
+                              <SelectItem value="visual">VT - Visivo</SelectItem>
                               <SelectItem value="ultrasonic_instrument">UT - Ultrasuoni</SelectItem>
                               <SelectItem value="ut_probe">UT - Sonde</SelectItem>
+                              <SelectItem value="calibration_blocks">Blocchi di Calibrazione</SelectItem>
+                              <SelectItem value="various">Vari</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -552,7 +575,21 @@ export default function Equipment({ user }: EquipmentProps) {
                       )}
                     />
 
-                    {form.watch("equipmentType") !== "ut_probe" && (
+                    <FormField
+                      control={form.control}
+                      name="site"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sito</FormLabel>
+                          <FormControl>
+                            <Input placeholder="es. Cimolai Monfalcone" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {!['ut_probe', 'calibration_blocks', 'various'].includes(form.watch("equipmentType")) && (
                       <FormField
                         control={form.control}
                         name="calibrationExpiry"
@@ -654,7 +691,7 @@ export default function Equipment({ user }: EquipmentProps) {
       {/* Tabs for equipment types */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {(['mt', 'ut', 'sonde'] as const).map((tab) => (
+          {(['mt', 'visual', 'ut', 'sonde', 'blocks', 'various'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -783,6 +820,7 @@ export default function Equipment({ user }: EquipmentProps) {
                     )}
                     <TableHead>N. Serie Interno</TableHead>
                     <TableHead>N. Serie</TableHead>
+                    <TableHead>Sito</TableHead>
                     {/* Show probe-specific columns only if there are UT probes in filtered results */}
                     {filteredEquipment.some((eq: any) => eq.equipmentType === 'ut_probe') && (
                       <>
@@ -792,7 +830,7 @@ export default function Equipment({ user }: EquipmentProps) {
                       </>
                     )}
                     {/* Show calibration column only if there are equipment that requires it */}
-                    {filteredEquipment.some((eq: any) => eq.equipmentType !== 'ut_probe') && (
+                    {filteredEquipment.some((eq: any) => !['ut_probe', 'calibration_blocks', 'various'].includes(eq.equipmentType)) && (
                       <TableHead>Scadenza Calibrazione</TableHead>
                     )}
                     <TableHead>Operatore Assegnato</TableHead>
@@ -817,6 +855,7 @@ export default function Equipment({ user }: EquipmentProps) {
                       )}
                       <TableCell>{equipment.internalSerialNumber || '-'}</TableCell>
                       <TableCell>{equipment.serialNumber}</TableCell>
+                      <TableCell>{equipment.site}</TableCell>
                       {/* Show probe-specific columns only if there are UT probes in filtered results */}
                       {filteredEquipment.some((eq: any) => eq.equipmentType === 'ut_probe') && (
                         <>
@@ -826,7 +865,7 @@ export default function Equipment({ user }: EquipmentProps) {
                         </>
                       )}
                       {/* Show calibration column only if there are equipment that requires it */}
-                      {filteredEquipment.some((eq: any) => eq.equipmentType !== 'ut_probe') && (
+                      {filteredEquipment.some((eq: any) => !['ut_probe', 'calibration_blocks', 'various'].includes(eq.equipmentType)) && (
                         <TableCell>
                           {equipment.calibrationExpiry ? (
                             <div className="flex items-center">

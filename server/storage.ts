@@ -503,6 +503,7 @@ export class DatabaseStorage implements IStorage {
         model: equipmentData.model,
         internalSerialNumber: equipmentData.internalSerialNumber,
         serialNumber: equipmentData.serialNumber,
+        site: equipmentData.site,
         angle: equipmentData.angle,
         frequency: equipmentData.frequency,
         dimension: equipmentData.dimension,
@@ -525,6 +526,7 @@ export class DatabaseStorage implements IStorage {
         model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
+        site: equipment.site,
         angle: equipment.angle,
         frequency: equipment.frequency,
         dimension: equipment.dimension,
@@ -557,6 +559,7 @@ export class DatabaseStorage implements IStorage {
         model: equipment.model,
         internalSerialNumber: equipment.internalSerialNumber,
         serialNumber: equipment.serialNumber,
+        site: equipment.site,
         angle: equipment.angle,
         frequency: equipment.frequency,
         dimension: equipment.dimension,
@@ -595,6 +598,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.model !== undefined) updateData.model = updates.model;
     if (updates.internalSerialNumber !== undefined) updateData.internalSerialNumber = updates.internalSerialNumber;
     if (updates.serialNumber !== undefined) updateData.serialNumber = updates.serialNumber;
+    if (updates.site !== undefined) updateData.site = updates.site;
     if (updates.angle !== undefined) updateData.angle = updates.angle;
     if (updates.frequency !== undefined) updateData.frequency = updates.frequency;
     if (updates.dimension !== undefined) updateData.dimension = updates.dimension;
