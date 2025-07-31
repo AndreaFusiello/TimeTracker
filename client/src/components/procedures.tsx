@@ -640,6 +640,9 @@ export default function Procedures() {
             {(user as any)?.role === 'operator' && (
               <Badge variant="outline" className="ml-2">Solo revisioni correnti</Badge>
             )}
+            <Badge variant="outline" className="ml-2 text-xs">
+              Ruolo: {(user as any)?.role || 'Non definito'}
+            </Badge>
           </CardTitle>
           <CardDescription>
             {filteredProcedures.length === 0 
