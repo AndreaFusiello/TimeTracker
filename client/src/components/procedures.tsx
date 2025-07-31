@@ -159,15 +159,28 @@ export default function Procedures() {
 
   const handleEdit = (procedure: any) => {
     setEditingProcedure(procedure);
-    form.reset({
-      jobNumber: procedure.jobNumber,
-      procedureName: procedure.procedureName,
-      procedureCode: procedure.procedureCode,
-      procedureType: procedure.procedureType,
-      revision: procedure.revision,
+    
+    // Reset form with existing procedure data
+    const formData = {
+      jobNumber: procedure.jobNumber || "",
+      procedureName: procedure.procedureName || "",
+      procedureCode: procedure.procedureCode || "",
+      procedureType: procedure.procedureType || "UT",
+      revision: procedure.revision || "Rev. 0",
       description: procedure.description || "",
-      status: procedure.status,
-    });
+      status: procedure.status || "draft",
+    };
+    
+    console.log("Editing procedure data:", procedure);
+    console.log("Form data being set:", formData);
+    
+    form.reset(formData);
+    
+    // Force validation trigger after form reset
+    setTimeout(() => {
+      form.trigger();
+    }, 100);
+    
     setDialogOpen(true);
   };
 
@@ -487,7 +500,11 @@ export default function Procedures() {
                       </Button>
                       <Button 
                         type="submit" 
-                        disabled={createProcedureMutation.isPending || updateProcedureMutation.isPending}
+                        disabled={
+                          createProcedureMutation.isPending || 
+                          updateProcedureMutation.isPending ||
+                          !form.formState.isValid
+                        }
                       >
                         {createProcedureMutation.isPending || updateProcedureMutation.isPending ? (
                           "Caricamento..."
@@ -495,6 +512,13 @@ export default function Procedures() {
                           editingProcedure ? "Aggiorna" : "Crea"
                         )}
                       </Button>
+                      {/* Debug info - remove in production */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          Form valid: {form.formState.isValid ? 'Si' : 'No'} | 
+                          Errors: {Object.keys(form.formState.errors).length}
+                        </div>
+                      )}
                     </DialogFooter>
                   </form>
                 </Form>
