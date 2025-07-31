@@ -1021,7 +1021,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = user.id;
       }
       
+      console.log("Delete procedure attempt - User:", user?.username, "Role:", user?.role);
+      
       if (!user || user.role !== 'admin') {
+        console.log("Delete procedure denied - User role:", user?.role, "Required: admin");
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
