@@ -96,14 +96,28 @@ export default function Procedures() {
 
   // Delete procedure mutation
   const deleteProcedureMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/procedures/${id}`, "DELETE"),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/procedures/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/procedures"] });
       console.log("Procedure deleted successfully");
     },
     onError: (error) => {
       console.error("Error deleting procedure:", error);
-      alert("Errore durante l'eliminazione della procedura. Verifica di avere i permessi necessari.");
+      alert("Errore durante l'eliminazione della procedura: " + error.message);
     },
   });
 
