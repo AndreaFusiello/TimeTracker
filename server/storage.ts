@@ -20,7 +20,7 @@ import {
   type UpdateProcedure,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
