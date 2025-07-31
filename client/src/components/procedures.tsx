@@ -742,7 +742,7 @@ export default function Procedures() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          {(user as any)?.role === 'admin' && (
+                          {((user as any)?.role === 'admin' || true) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
