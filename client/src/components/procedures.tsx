@@ -26,12 +26,9 @@ const procedureFormSchema = z.object({
   procedureName: z.string().min(1, "Nome procedura richiesto"),
   procedureCode: z.string().min(1, "Codice procedura richiesto"),
   procedureType: z.enum(['UT', 'MT', 'VT', 'PT', 'RT', 'ET', 'LT']),
-  revision: z.string().default("Rev. 0"),
-  isCurrentRevision: z.boolean().default(true),
+  revision: z.string().min(1, "Revisione richiesta"),
   description: z.string().optional(),
-  status: z.enum(["draft", "approved"]).default("draft"),
-  approvedById: z.string().optional(),
-  approvedAt: z.string().optional()
+  status: z.enum(["draft", "approved"]).default("draft")
 });
 
 type ProcedureFormData = z.infer<typeof procedureFormSchema>;
@@ -55,11 +52,8 @@ export default function Procedures() {
       procedureCode: "",
       procedureType: "UT" as const,
       revision: "Rev. 0",
-      isCurrentRevision: true,
       description: "",
       status: "draft",
-      approvedById: "none",
-      approvedAt: "",
     },
   });
 
@@ -113,11 +107,7 @@ export default function Procedures() {
     console.log("Selected file:", selectedFile);
     
     try {
-      const procedureData = {
-        ...data,
-        approvedById: data.approvedById === "" || data.approvedById === "none" ? undefined : data.approvedById,
-        approvedAt: data.approvedAt && data.approvedById && data.approvedById !== "none" ? new Date().toISOString() : undefined,
-      };
+      const procedureData = data;
 
       if (editingProcedure) {
         // For updates, handle file upload separately if needed
@@ -175,11 +165,8 @@ export default function Procedures() {
       procedureCode: procedure.procedureCode,
       procedureType: procedure.procedureType,
       revision: procedure.revision,
-      isCurrentRevision: procedure.isCurrentRevision,
       description: procedure.description || "",
       status: procedure.status,
-      approvedById: procedure.approvedBy?.id || "none",
-      approvedAt: procedure.approvedAt ? format(new Date(procedure.approvedAt), "yyyy-MM-dd") : "",
     });
     setDialogOpen(true);
   };
@@ -299,7 +286,7 @@ export default function Procedures() {
                   Nuova Procedura
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingProcedure ? "Modifica Procedura" : "Nuova Procedura"}
@@ -346,48 +333,46 @@ export default function Procedures() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="procedureType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tipologia Procedura</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleziona tipologia" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="UT">UT - Ultrasuoni</SelectItem>
-                                <SelectItem value="MT">MT - Magnetoscopia</SelectItem>
-                                <SelectItem value="VT">VT - Visivo</SelectItem>
-                                <SelectItem value="PT">PT - Liquidi Penetranti</SelectItem>
-                                <SelectItem value="RT">RT - Radiografia</SelectItem>
-                                <SelectItem value="ET">ET - Correnti Indotte</SelectItem>
-                                <SelectItem value="LT">LT - Test di Tenuta</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="revision"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Revisione</FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="procedureType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipologia Procedura</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <Input {...field} placeholder="es. Rev. 0" />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleziona tipologia" />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                            <SelectContent>
+                              <SelectItem value="UT">UT - Ultrasuoni</SelectItem>
+                              <SelectItem value="MT">MT - Magnetoscopia</SelectItem>
+                              <SelectItem value="VT">VT - Visivo</SelectItem>
+                              <SelectItem value="PT">PT - Liquidi Penetranti</SelectItem>
+                              <SelectItem value="RT">RT - Radiografia</SelectItem>
+                              <SelectItem value="ET">ET - Correnti Indotte</SelectItem>
+                              <SelectItem value="LT">LT - Test di Tenuta</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="revision"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Revisione</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="es. Rev. 0" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}
@@ -455,36 +440,7 @@ export default function Procedures() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="approvedById"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Approvata da</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleziona approvatore" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">Nessuno</SelectItem>
-                              {(users as any[])
-                                .filter((u: any) => u.role === 'admin' || u.role === 'team_leader')
-                                .map((user: any) => (
-                                  <SelectItem key={user.id} value={user.id}>
-                                    {user.firstName && user.lastName 
-                                      ? `${user.firstName} ${user.lastName}`
-                                      : user.username
-                                    }
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
 
                     {/* File Upload Section */}
                     <div className="space-y-2">
