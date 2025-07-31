@@ -167,21 +167,21 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   updatedAt: true,
 }).extend({
   calibrationExpiry: z.string().nullable().optional(), // Optional for UT probes, can be null
-  internalSerialNumber: z.string().optional(), // Optional internal serial number
+  internalSerialNumber: z.string().nullable().optional(), // Optional internal serial number
   site: z.string().min(1, "Il sito è obbligatorio"), // Site is required
-  model: z.string().optional(),
-  angle: z.string().optional(),
-  frequency: z.string().optional(),
-  dimension: z.string().optional(),
+  model: z.string().nullable().optional(),
+  angle: z.string().nullable().optional(),
+  frequency: z.string().nullable().optional(),
+  dimension: z.string().nullable().optional(),
 });
 
 export const updateEquipmentSchema = insertEquipmentSchema.partial().extend({
   calibrationExpiry: z.string().nullable().optional(),
-  site: z.string().optional(),
-  model: z.string().optional(),
-  angle: z.string().optional(),
-  frequency: z.string().optional(),
-  dimension: z.string().optional(),
+  site: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  angle: z.string().nullable().optional(),
+  frequency: z.string().nullable().optional(),
+  dimension: z.string().nullable().optional(),
 });
 
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;

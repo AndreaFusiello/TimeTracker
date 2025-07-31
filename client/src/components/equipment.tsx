@@ -306,16 +306,18 @@ export default function Equipment({ user }: EquipmentProps) {
     const equipmentData: any = {
       ...data,
       assignedOperatorId: data.assignedOperatorId === "unassigned" ? null : data.assignedOperatorId,
-      // Model field only for UT instruments and probes
-      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? data.model : undefined,
+      // Convert empty strings to null for optional fields
+      internalSerialNumber: data.internalSerialNumber || null,
+      model: (data.equipmentType === 'ultrasonic_instrument' || data.equipmentType === 'ut_probe') ? (data.model || null) : null,
       // Probe-specific fields only for UT probes
       angle: data.equipmentType === 'ut_probe' ? (data.angle || null) : null,
       frequency: data.equipmentType === 'ut_probe' ? (data.frequency || null) : null,
       dimension: data.equipmentType === 'ut_probe' ? (data.dimension || null) : null,
     };
 
-    // Handle calibration expiry - null for UT probes, date string for others
-    if (data.equipmentType === 'ut_probe') {
+    // Handle calibration expiry - null for equipment that doesn't need calibration
+    const noCalibrationTypes = ['ut_probe', 'calibration_blocks', 'various'];
+    if (noCalibrationTypes.includes(data.equipmentType)) {
       equipmentData.calibrationExpiry = null;
     } else {
       equipmentData.calibrationExpiry = data.calibrationExpiry || null;
