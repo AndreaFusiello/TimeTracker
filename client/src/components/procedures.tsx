@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit2, Trash2, FileText, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit2, Trash2, FileText, Eye, EyeOff, Upload, Download } from "lucide-react";
 import { insertProcedureSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -33,6 +33,7 @@ export default function Procedures() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProcedure, setEditingProcedure] = useState<any>(null);
   const [showSuperseded, setShowSuperseded] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const form = useForm<ProcedureFormData>({
     resolver: zodResolver(procedureFormSchema),
@@ -93,17 +94,58 @@ export default function Procedures() {
     },
   });
 
-  const onSubmit = (data: ProcedureFormData) => {
-    const procedureData = {
-      ...data,
-      approvedById: data.approvedById === "" || data.approvedById === "none" ? undefined : data.approvedById,
-      approvedAt: data.approvedAt && data.approvedById && data.approvedById !== "none" ? new Date().toISOString() : undefined,
-    };
+  const onSubmit = async (data: ProcedureFormData) => {
+    try {
+      const procedureData = {
+        ...data,
+        approvedById: data.approvedById === "" || data.approvedById === "none" ? undefined : data.approvedById,
+        approvedAt: data.approvedAt && data.approvedById && data.approvedById !== "none" ? new Date().toISOString() : undefined,
+      };
 
-    if (editingProcedure) {
-      updateProcedureMutation.mutate({ id: editingProcedure.id, data: procedureData });
-    } else {
-      createProcedureMutation.mutate(procedureData);
+      if (editingProcedure) {
+        // For updates, handle file upload separately if needed
+        if (selectedFile) {
+          const formData = new FormData();
+          formData.append('document', selectedFile);
+          const uploadResponse = await fetch(`/api/procedures/${editingProcedure.id}/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+          if (uploadResponse.ok) {
+            const { documentPath } = await uploadResponse.json();
+            (procedureData as any).documentPath = documentPath;
+          }
+        }
+        updateProcedureMutation.mutate({ id: editingProcedure.id, data: procedureData });
+      } else {
+        // For new procedures, upload file first if selected
+        if (selectedFile) {
+          const formData = new FormData();  
+          formData.append('document', selectedFile);
+          Object.keys(procedureData).forEach(key => {
+            const value = (procedureData as any)[key];
+            if (value !== undefined) {
+              formData.append(key, value);
+            }
+          });
+          
+          const response = await fetch('/api/procedures/create-with-file', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (response.ok) {
+            queryClient.invalidateQueries({ queryKey: ["/api/procedures"] });
+            setDialogOpen(false);
+            form.reset();
+            setSelectedFile(null);
+          }
+        } else {
+          createProcedureMutation.mutate(procedureData);
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting procedure:", error);
     }
   };
 
@@ -121,6 +163,27 @@ export default function Procedures() {
       approvedAt: procedure.approvedAt ? format(new Date(procedure.approvedAt), "yyyy-MM-dd") : "",
     });
     setDialogOpen(true);
+  };
+
+  const handleDownload = async (procedure: any) => {
+    if (!procedure.documentPath) return;
+    
+    try {
+      const response = await fetch(`/api/procedures/${procedure.id}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${procedure.procedureCode}_${procedure.revision}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Error downloading procedure:", error);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -337,6 +400,39 @@ export default function Procedures() {
                       )}
                     />
 
+                    {/* File Upload Section */}
+                    <div className="space-y-2">
+                      <Label>Documento Procedura</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="document"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Carica
+                        </Button>
+                      </div>
+                      {selectedFile && (
+                        <p className="text-sm text-muted-foreground">
+                          File selezionato: {selectedFile.name}
+                        </p>
+                      )}
+                      {editingProcedure?.documentPath && (
+                        <p className="text-sm text-green-600">
+                          Documento esistente: {editingProcedure.documentPath.split('/').pop()}
+                        </p>
+                      )}
+                    </div>
+
                     <DialogFooter>
                       <Button
                         type="button"
@@ -391,10 +487,11 @@ export default function Procedures() {
                   <TableHead>Nome Procedura</TableHead>
                   <TableHead>Revisione</TableHead>
                   <TableHead>Stato</TableHead>
+                  <TableHead>Documento</TableHead>
                   <TableHead>Creata da</TableHead>
                   <TableHead>Approvata da</TableHead>
                   <TableHead>Data Creazione</TableHead>
-                  {canManageProcedures && <TableHead>Azioni</TableHead>}
+                  <TableHead>Azioni</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -413,6 +510,21 @@ export default function Procedures() {
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(procedure.status, procedure.isCurrentRevision)}
+                    </TableCell>
+                    <TableCell>
+                      {procedure.documentPath ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(procedure)}
+                          className="flex items-center gap-1"
+                        >
+                          <Download className="h-4 w-4" />
+                          Scarica
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Nessun documento</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {procedure.createdBy.firstName && procedure.createdBy.lastName

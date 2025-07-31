@@ -968,11 +968,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
+      // Get procedure to delete associated files
+      const procedure = await storage.getProcedureById(req.params.id);
+      if (procedure?.documentPath) {
+        try {
+          await deleteFile(procedure.documentPath);
+        } catch (error) {
+          console.error("Error deleting procedure document:", error);
+        }
+      }
+
       await storage.deleteProcedure(req.params.id);
       res.json({ message: "Procedure deleted successfully" });
     } catch (error) {
       console.error("Error deleting procedure:", error);
       res.status(500).json({ message: "Failed to delete procedure" });
+    }
+  });
+
+  // Create procedure with file upload
+  app.post("/api/procedures/create-with-file", requireAuth, upload.single('document'), async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const procedureData = {
+        ...req.body,
+        createdById: userId,
+        documentPath: req.file?.path || null,
+      };
+
+      const procedure = await storage.createProcedure(procedureData);
+      res.json(procedure);
+    } catch (error) {
+      console.error("Error creating procedure with file:", error);
+      res.status(500).json({ message: "Failed to create procedure" });
+    }
+  });
+
+  // Upload document for existing procedure
+  app.post("/api/procedures/:id/upload", requireAuth, upload.single('document'), async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Get existing procedure to delete old document if exists
+      const procedure = await storage.getProcedureById(req.params.id);
+      if (procedure?.documentPath) {
+        try {
+          await deleteFile(procedure.documentPath);
+        } catch (error) {
+          console.error("Error deleting old document:", error);
+        }
+      }
+
+      // Update procedure with new document path
+      await storage.updateProcedure(req.params.id, { documentPath: req.file.path });
+      
+      res.json({ documentPath: req.file.path });
+    } catch (error) {
+      console.error("Error uploading procedure document:", error);
+      res.status(500).json({ message: "Failed to upload document" });
+    }
+  });
+
+  // Download procedure document
+  app.get("/api/procedures/:id/download", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const procedure = await storage.getProcedureById(req.params.id);
+      if (!procedure) {
+        return res.status(404).json({ message: "Procedure not found" });
+      }
+
+      if (!procedure.documentPath) {
+        return res.status(404).json({ message: "No document found for this procedure" });
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(procedure.documentPath)) {
+        return res.status(404).json({ message: "Document file not found" });
+      }
+
+      // Set appropriate headers
+      const filename = `${procedure.procedureCode}_${procedure.revision}.pdf`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/pdf');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(procedure.documentPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading procedure document:", error);
+      res.status(500).json({ message: "Failed to download document" });
     }
   });
 
