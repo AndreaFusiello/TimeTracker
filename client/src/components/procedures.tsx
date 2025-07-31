@@ -44,7 +44,7 @@ export default function Procedures() {
       isCurrentRevision: true,
       description: "",
       status: "draft",
-      approvedById: "",
+      approvedById: "none",
       approvedAt: "",
     },
   });
@@ -96,8 +96,8 @@ export default function Procedures() {
   const onSubmit = (data: ProcedureFormData) => {
     const procedureData = {
       ...data,
-      approvedById: data.approvedById === "" ? undefined : data.approvedById,
-      approvedAt: data.approvedAt && data.approvedById ? new Date().toISOString() : undefined,
+      approvedById: data.approvedById === "" || data.approvedById === "none" ? undefined : data.approvedById,
+      approvedAt: data.approvedAt && data.approvedById && data.approvedById !== "none" ? new Date().toISOString() : undefined,
     };
 
     if (editingProcedure) {
@@ -117,7 +117,7 @@ export default function Procedures() {
       isCurrentRevision: procedure.isCurrentRevision,
       description: procedure.description || "",
       status: procedure.status,
-      approvedById: procedure.approvedBy?.id || "",
+      approvedById: procedure.approvedBy?.id || "none",
       approvedAt: procedure.approvedAt ? format(new Date(procedure.approvedAt), "yyyy-MM-dd") : "",
     });
     setDialogOpen(true);
@@ -319,7 +319,7 @@ export default function Procedures() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value={""}>Nessuno</SelectItem>
+                              <SelectItem value="none">Nessuno</SelectItem>
                               {(users as any[])
                                 .filter((u: any) => u.role === 'admin' || u.role === 'team_leader')
                                 .map((user: any) => (
