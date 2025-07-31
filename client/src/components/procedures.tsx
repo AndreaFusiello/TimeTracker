@@ -143,7 +143,7 @@ export default function Procedures() {
 
   // Filter procedures based on user role and superseded toggle
   const filteredProcedures = (procedures as any[]).filter((procedure: any) => {
-    if (user?.role === 'operator') {
+    if ((user as any)?.role === 'operator') {
       return procedure.isCurrentRevision; // Operators see only current revisions
     }
     
@@ -155,7 +155,7 @@ export default function Procedures() {
     return true;
   });
 
-  const canManageProcedures = user?.role === 'admin' || user?.role === 'team_leader';
+  const canManageProcedures = (user as any)?.role === 'admin' || (user as any)?.role === 'team_leader';
 
   if (isLoading) {
     return <div className="flex justify-center p-8">Caricamento procedure...</div>;
@@ -316,7 +316,7 @@ export default function Procedures() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">Nessuno</SelectItem>
+                              <SelectItem value={""}>Nessuno</SelectItem>
                               {(users as any[])
                                 .filter((u: any) => u.role === 'admin' || u.role === 'team_leader')
                                 .map((user: any) => (
@@ -367,7 +367,7 @@ export default function Procedures() {
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Elenco Procedure
-            {user?.role === 'operator' && (
+            {(user as any)?.role === 'operator' && (
               <Badge variant="outline" className="ml-2">Solo revisioni correnti</Badge>
             )}
           </CardTitle>
@@ -447,7 +447,7 @@ export default function Procedures() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          {user?.role === 'admin' && (
+                          {(user as any)?.role === 'admin' && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
