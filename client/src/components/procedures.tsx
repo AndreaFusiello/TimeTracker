@@ -654,9 +654,6 @@ export default function Procedures() {
             {(user as any)?.role === 'operator' && (
               <Badge variant="outline" className="ml-2">Solo revisioni correnti</Badge>
             )}
-            <Badge variant="outline" className="ml-2 text-xs">
-              Ruolo: {(user as any)?.role || 'Non definito'}
-            </Badge>
           </CardTitle>
           <CardDescription>
             {filteredProcedures.length === 0 
@@ -670,10 +667,10 @@ export default function Procedures() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Tipologia</TableHead>
                   <TableHead>Commessa</TableHead>
                   <TableHead>Codice</TableHead>
                   <TableHead>Nome Procedura</TableHead>
-                  <TableHead>Tipologia</TableHead>
                   <TableHead>Revisione</TableHead>
                   <TableHead>Stato</TableHead>
                   <TableHead>Documento</TableHead>
@@ -686,14 +683,14 @@ export default function Procedures() {
               <TableBody>
                 {filteredProcedures.map((procedure: any) => (
                   <TableRow key={procedure.id}>
-                    <TableCell className="font-medium">{procedure.jobNumber}</TableCell>
-                    <TableCell>{procedure.procedureCode}</TableCell>
-                    <TableCell>{procedure.procedureName}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700">
                         {procedure.procedureType}
                       </Badge>
                     </TableCell>
+                    <TableCell className="font-medium">{procedure.jobNumber}</TableCell>
+                    <TableCell>{procedure.procedureCode}</TableCell>
+                    <TableCell>{procedure.procedureName}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {procedure.revision}
@@ -756,7 +753,7 @@ export default function Procedures() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          {((user as any)?.role === 'admin' || true) && (
+                          {(user as any)?.role === 'admin' && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
