@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema, insertEquipmentSchema, updateEquipmentSchema } from "@shared/schema";
+import { insertWorkHoursSchema, updateWorkHoursSchema, insertJobOrderSchema, registerSchema, loginSchema, insertEquipmentSchema, updateEquipmentSchema, insertQualificationSchema, updateQualificationSchema } from "@shared/schema";
 import { upload, deleteFile } from "./uploads";
 import { z } from "zod";
 import path from "path";
@@ -1163,6 +1163,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error downloading procedure document:", error);
       res.status(500).json({ message: "Failed to download document" });
+    }
+  });
+
+  // Qualifications Management Routes
+
+  // Get qualifications (role-based access)
+  app.get("/api/qualifications", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      let qualifications;
+      if (user.role === 'admin' || user.role === 'team_leader') {
+        // Admins and team leaders see all qualifications
+        qualifications = await storage.getQualifications();
+      } else {
+        // Operators see only their own qualifications
+        qualifications = await storage.getQualificationsByOperator(userId);
+      }
+      
+      res.json(qualifications);
+    } catch (error) {
+      console.error("Error fetching qualifications:", error);
+      res.status(500).json({ message: "Failed to fetch qualifications" });
+    }
+  });
+
+  // Get qualifications by operator
+  app.get("/api/qualifications/operator/:operatorId", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Check permissions
+      if (user.role !== 'admin' && user.role !== 'team_leader' && userId !== req.params.operatorId) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      const qualifications = await storage.getQualificationsByOperator(req.params.operatorId);
+      res.json(qualifications);
+    } catch (error) {
+      console.error("Error fetching operator qualifications:", error);
+      res.status(500).json({ message: "Failed to fetch operator qualifications" });
+    }
+  });
+
+  // Create new qualification
+  app.post("/api/qualifications", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const qualificationData = insertQualificationSchema.parse(req.body);
+      const qualification = await storage.createQualification(qualificationData);
+      res.json(qualification);
+    } catch (error) {
+      console.error("Error creating qualification:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create qualification" });
+    }
+  });
+
+  // Update qualification
+  app.put("/api/qualifications/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const updateData = updateQualificationSchema.parse(req.body);
+      const qualification = await storage.updateQualification(req.params.id, updateData);
+      res.json(qualification);
+    } catch (error) {
+      console.error("Error updating qualification:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update qualification" });
+    }
+  });
+
+  // Delete qualification
+  app.delete("/api/qualifications/:id", requireAuth, async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      await storage.deleteQualification(req.params.id);
+      res.json({ message: "Qualification deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting qualification:", error);
+      res.status(500).json({ message: "Failed to delete qualification" });
+    }
+  });
+
+  // Create qualification with document upload
+  app.post("/api/qualifications/create-with-file", requireAuth, upload.single('document'), async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const qualificationData = {
+        ...req.body,
+        documentPath: req.file?.path || null,
+      };
+
+      const qualification = await storage.createQualification(qualificationData);
+      res.json(qualification);
+    } catch (error) {
+      console.error("Error creating qualification with file:", error);
+      res.status(500).json({ message: "Failed to create qualification" });
+    }
+  });
+
+  // Upload document for existing qualification
+  app.post("/api/qualifications/:id/upload", requireAuth, upload.single('document'), async (req: any, res) => {
+    try {
+      let userId, user;
+      if (req.user.claims?.sub) {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else if (req.user.localUser) {
+        user = req.user.localUser;
+        userId = user.id;
+      }
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'team_leader')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Update qualification with new document path
+      await storage.updateQualification(req.params.id, { documentPath: req.file.path });
+      
+      res.json({ documentPath: req.file.path });
+    } catch (error) {
+      console.error("Error uploading qualification document:", error);
+      res.status(500).json({ message: "Failed to upload document" });
     }
   });
 

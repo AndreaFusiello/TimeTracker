@@ -67,6 +67,7 @@ export default function Navigation({ user, activeTab, onTabChange, canAccessAdmi
     { id: 'hours-entry', label: 'Inserisci Ore', icon: 'fas fa-plus-circle' },
     { id: 'history', label: 'Storico', icon: 'fas fa-history' },
     { id: 'reports', label: 'Report', icon: 'fas fa-chart-bar' },
+    { id: 'qualifications', label: 'Qualifiche', icon: 'fas fa-certificate' },
     { id: 'procedures', label: 'Procedure', icon: 'fas fa-file-alt' },
     { id: 'equipment', label: 'Attrezzature', icon: 'fas fa-tools' },
     ...(canAccessAdmin ? [{ id: 'admin', label: 'Amministrazione', icon: 'fas fa-users-cog' }] : [])

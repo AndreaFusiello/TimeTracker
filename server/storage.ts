@@ -4,6 +4,7 @@ import {
   jobOrders,
   equipment,
   procedures,
+  qualifications,
   type User,
   type UpsertUser,
   type WorkHours,
@@ -18,6 +19,9 @@ import {
   type Procedure,
   type InsertProcedure,
   type UpdateProcedure,
+  type Qualification,
+  type InsertQualification,
+  type UpdateQualification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -93,6 +97,13 @@ export interface IStorage {
   getProcedureById(id: string): Promise<Procedure | undefined>;
   updateProcedure(id: string, updates: any): Promise<Procedure>;
   deleteProcedure(id: string): Promise<void>;
+
+  // Qualifications operations
+  getQualifications(): Promise<any[]>;
+  getQualificationsByOperator(operatorId: string): Promise<Qualification[]>;
+  createQualification(data: InsertQualification): Promise<Qualification>;
+  updateQualification(id: string, data: UpdateQualification): Promise<Qualification>;
+  deleteQualification(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -792,6 +803,71 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(procedures)
       .where(eq(procedures.id, id));
+  }
+
+  // Qualifications operations
+  async getQualifications(): Promise<any[]> {
+    const result = await db
+      .select({
+        id: qualifications.id,
+        operatorId: qualifications.operatorId,
+        qualificationType: qualifications.qualificationType,
+        level: qualifications.level,
+        certificationNumber: qualifications.certificationNumber,
+        issuingBody: qualifications.issuingBody,
+        issueDate: qualifications.issueDate,
+        expiryDate: qualifications.expiryDate,
+        documentPath: qualifications.documentPath,
+        status: qualifications.status,
+        notes: qualifications.notes,
+        createdAt: qualifications.createdAt,
+        updatedAt: qualifications.updatedAt,
+        operator: {
+          id: users.id,
+          username: users.username,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+        }
+      })
+      .from(qualifications)
+      .leftJoin(users, eq(qualifications.operatorId, users.id))
+      .orderBy(qualifications.expiryDate);
+    
+    return result;
+  }
+
+  async getQualificationsByOperator(operatorId: string): Promise<Qualification[]> {
+    const result = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.operatorId, operatorId))
+      .orderBy(qualifications.expiryDate);
+    
+    return result;
+  }
+
+  async createQualification(data: InsertQualification): Promise<Qualification> {
+    const [qualification] = await db
+      .insert(qualifications)
+      .values(data)
+      .returning();
+    return qualification;
+  }
+
+  async updateQualification(id: string, data: UpdateQualification): Promise<Qualification> {
+    const [qualification] = await db
+      .update(qualifications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(qualifications.id, id))
+      .returning();
+    return qualification;
+  }
+
+  async deleteQualification(id: string): Promise<void> {
+    await db
+      .delete(qualifications)
+      .where(eq(qualifications.id, id));
   }
 }
 

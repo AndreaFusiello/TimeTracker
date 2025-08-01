@@ -225,10 +225,54 @@ export type InsertProcedure = z.infer<typeof insertProcedureSchema>;
 export type UpdateProcedure = z.infer<typeof updateProcedureSchema>;
 export type Procedure = typeof procedures.$inferSelect;
 
+// Qualifications management table for operator certifications
+export const qualifications = pgTable("qualifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  operatorId: varchar("operator_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  qualificationType: varchar("qualification_type").notNull(), // MT, UT, VT, PT, RT, ET, LT
+  level: varchar("level").notNull(), // Livello 1, Livello 2, Livello 3
+  certificationNumber: varchar("certification_number"),
+  issuingBody: varchar("issuing_body").notNull(), // Ente certificatore
+  issueDate: timestamp("issue_date").notNull(),
+  expiryDate: timestamp("expiry_date").notNull(),
+  documentPath: varchar("document_path"), // Path del certificato PDF
+  status: varchar("status").notNull().default("active"), // active, expired, suspended
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertQualificationSchema = createInsertSchema(qualifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  qualificationType: z.enum(['MT', 'UT', 'VT', 'PT', 'RT', 'ET', 'LT']),
+  level: z.enum(['Livello 1', 'Livello 2', 'Livello 3']),
+  status: z.enum(['active', 'expired', 'suspended']).default('active'),
+  certificationNumber: z.string().optional(),
+  notes: z.string().optional(),
+  documentPath: z.string().optional(),
+});
+
+export const updateQualificationSchema = insertQualificationSchema.partial();
+
+export type InsertQualification = z.infer<typeof insertQualificationSchema>;
+export type UpdateQualification = z.infer<typeof updateQualificationSchema>;
+export type Qualification = typeof qualifications.$inferSelect;
+
 // Equipment relations
 export const equipmentRelations = relations(equipment, ({ one }) => ({
   assignedOperator: one(users, {
     fields: [equipment.assignedOperatorId],
+    references: [users.id],
+  }),
+}));
+
+// Qualifications relations
+export const qualificationsRelations = relations(qualifications, ({ one }) => ({
+  operator: one(users, {
+    fields: [qualifications.operatorId],
     references: [users.id],
   }),
 }));

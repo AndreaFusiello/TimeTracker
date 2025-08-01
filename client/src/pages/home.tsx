@@ -9,9 +9,10 @@ import HoursHistory from "@/components/hours-history";
 import Reports from "@/components/reports";
 import Procedures from "@/components/procedures";
 import Equipment from "@/components/equipment";
+import Qualifications from "@/components/qualifications";
 import AdminPanel from "@/components/admin-panel";
 
-type TabType = 'dashboard' | 'hours-entry' | 'history' | 'reports' | 'procedures' | 'equipment' | 'admin';
+type TabType = 'dashboard' | 'hours-entry' | 'history' | 'reports' | 'qualifications' | 'procedures' | 'equipment' | 'admin';
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -63,6 +64,7 @@ export default function Home() {
         {activeTab === 'hours-entry' && <HoursEntryForm user={user} />}
         {activeTab === 'history' && <HoursHistory user={user} />}
         {activeTab === 'reports' && <Reports user={user} />}
+        {activeTab === 'qualifications' && <Qualifications />}
         {activeTab === 'procedures' && <Procedures />}
         {activeTab === 'equipment' && <Equipment user={user} />}
         {activeTab === 'admin' && canAccessAdmin && <AdminPanel user={user} />}
