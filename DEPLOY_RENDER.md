@@ -48,8 +48,8 @@ Assicurati che il repository GitHub contenga tutti questi file:
    - Branch: `main`
    - Root Directory: lascia vuoto
    - Environment: `Node`
-   - Build Command: `npm install && npm run build`
-   - Start Command: `npm start`
+   - Build Command: `chmod +x build.sh && ./build.sh`
+   - Start Command: `cd dist && npm install --production && npm start`
 
 2. **Configura le variabili d'ambiente:**
    ```
@@ -95,15 +95,32 @@ Assicurati che il repository GitHub contenga tutti questi file:
 - Controlla i log in Render Dashboard
 - Verifica che DATABASE_URL sia corretto
 - Assicurati che NODE_ENV=production
+- Verifica che il build script sia eseguibile: `chmod +x build.sh`
+
+### Errori di build:
+- **"vite: not found"**: Il build script ora usa `npx vite build` per risolvere questo
+- **"esbuild: not found"**: Similmente risolto con `npx esbuild`
+- **Dependenze mancanti**: Il build installa tutte le dipendenze incluse devDependencies
 
 ### Errori di database:
 - Verifica la connessione al database PostgreSQL
 - Controlla che le credenziali siano corrette
 - Il database deve essere accessibile dall'app
+- Attendi che il database sia completamente inizializzato
 
 ### Problemi di autenticazione:
-- Controlla che SESSION_SECRET sia impostato
+- Controlla che SESSION_SECRET sia impostato e abbia almeno 32 caratteri
 - Per Replit Auth: verifica REPLIT_DOMAINS e REPL_ID
+- Assicurati che le sessioni siano configurate correttamente
+
+### Deploy fallisce:
+1. **Verifica i file richiesti** nel repository:
+   - `build.sh` (con permessi di esecuzione)
+   - `render.yaml` o configurazione manuale corretta
+   - `package.json` e `package-lock.json`
+
+2. **Controlla i log di build** per errori specifici
+3. **Testa localmente** il build script: `./build.sh`
 
 ## Monitoraggio
 

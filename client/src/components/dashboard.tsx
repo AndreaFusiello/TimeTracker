@@ -24,31 +24,31 @@ export default function Dashboard({ user }: DashboardProps) {
   const stats = [
     {
       title: "Ore Oggi",
-      value: isLoadingUserStats ? "..." : userStats?.todayHours?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.todayHours?.toFixed(1) || "0.0",
       icon: Clock,
       color: "text-primary"
     },
     {
       title: "Ore Settimana",
-      value: isLoadingUserStats ? "..." : userStats?.weekHours?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.weekHours?.toFixed(1) || "0.0",
       icon: Calendar,
       color: "text-green-600"
     },
     {
       title: "Ore Mensili",
-      value: isLoadingUserStats ? "..." : userStats?.monthHours?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.monthHours?.toFixed(1) || "0.0",
       icon: TrendingUp,
       color: "text-blue-600"
     },
     {
       title: "Commesse Attive",
-      value: isLoadingTeamStats ? "..." : teamStats?.activeJobs?.toString() || "0",
+      value: isLoadingTeamStats ? "..." : (teamStats as any)?.activeJobs?.toString() || "0",
       icon: Briefcase,
       color: "text-orange-600"
     },
     ...(user.role !== 'operator' ? [{
       title: "Team Membri",
-      value: isLoadingTeamStats ? "..." : teamStats?.totalMembers?.toString() || "0",
+      value: isLoadingTeamStats ? "..." : (teamStats as any)?.totalMembers?.toString() || "0",
       icon: Users,
       color: "text-gray-600"
     }] : [])
@@ -58,19 +58,19 @@ export default function Dashboard({ user }: DashboardProps) {
     {
       title: "Straordinario Settimanale",
       subtitle: "Lun-Ven oltre 8h",
-      value: isLoadingUserStats ? "..." : userStats?.overtimeWeekly?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.overtimeWeekly?.toFixed(1) || "0.0",
       color: "text-yellow-600"
     },
     {
       title: "Straordinario Extra",
       subtitle: "Sabato",
-      value: isLoadingUserStats ? "..." : userStats?.overtimeExtra?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.overtimeExtra?.toFixed(1) || "0.0",
       color: "text-orange-600"
     },
     {
       title: "Straordinario Festivo",
       subtitle: "Domenica e festività",
-      value: isLoadingUserStats ? "..." : userStats?.overtimeHoliday?.toFixed(1) || "0.0",
+      value: isLoadingUserStats ? "..." : (userStats as any)?.overtimeHoliday?.toFixed(1) || "0.0",
       color: "text-red-600"
     }
   ];
@@ -123,7 +123,7 @@ export default function Dashboard({ user }: DashboardProps) {
               <span className="text-sm font-medium text-gray-700">Totale Straordinari:</span>
               <span className="text-lg font-bold text-primary">
                 {isLoadingUserStats ? "..." : 
-                  ((userStats?.overtimeWeekly || 0) + (userStats?.overtimeExtra || 0) + (userStats?.overtimeHoliday || 0)).toFixed(1)
+                  (((userStats as any)?.overtimeWeekly || 0) + ((userStats as any)?.overtimeExtra || 0) + ((userStats as any)?.overtimeHoliday || 0)).toFixed(1)
                 }h
               </span>
             </div>
@@ -150,9 +150,9 @@ export default function Dashboard({ user }: DashboardProps) {
                 </div>
               ))}
             </div>
-          ) : recentHours && recentHours.length > 0 ? (
+          ) : recentHours && (recentHours as any).length > 0 ? (
             <div className="space-y-4">
-              {recentHours.slice(0, 5).map((entry: any) => (
+              {(recentHours as any).slice(0, 5).map((entry: any) => (
                 <div key={entry.id} className="flex items-center justify-between py-2">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">

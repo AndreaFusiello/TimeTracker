@@ -48,7 +48,7 @@ export default function Home() {
     return null;
   }
 
-  const canAccessAdmin = user.role === 'admin';
+  const canAccessAdmin = (user as any).role === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50">
