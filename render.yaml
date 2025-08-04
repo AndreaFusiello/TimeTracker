@@ -3,7 +3,7 @@ services:
     name: timetracker-pro
     env: node
     plan: free
-    buildCommand: npm install && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && mkdir -p dist/uploads && cp -r shared dist/
+    buildCommand: npm install && npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && mkdir -p dist/uploads && cp -r shared dist/
     startCommand: NODE_ENV=production node dist/index.js
     healthCheckPath: /api/health
     envVars:
