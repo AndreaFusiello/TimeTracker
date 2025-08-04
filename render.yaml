@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: timetracker-pro
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: timetracker-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: REPLIT_DOMAINS
+        value: timetracker-pro.onrender.com
+      - key: ISSUER_URL
+        value: https://replit.com/oidc
+      - key: REPL_ID
+        sync: false
+
+databases:
+  - name: timetracker-db
+    databaseName: timetracker
+    user: timetracker_user
+    plan: free

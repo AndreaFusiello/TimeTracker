@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+coverage
+.tmp
+.vscode
+.replit
+replit.nix
+uploads
+dist
+client/dist
+attached_assets
+cookies.txt

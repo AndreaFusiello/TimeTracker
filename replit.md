@@ -128,6 +128,27 @@ Preferred communication style: Simple, everyday language.
 - **Domain Configuration**: Multi-domain support for authentication flows
 - **Session Management**: Optimized for Replit's hosting environment
 
+## Recent Changes (August 2025)
+
+### Deploy Configuration and Production Setup
+- **Render.com Integration**: Added complete deployment configuration with `render.yaml`, `Dockerfile`, and `.dockerignore`
+- **Health Check Endpoint**: Implemented `/api/health` endpoint for monitoring and deployment verification
+- **Production Documentation**: Created comprehensive guides for GitHub integration and Render.com deployment
+- **Build Optimization**: Added production build script with error handling and verification steps
+- **Environment Configuration**: Documented all required environment variables for production deployment
+
+### Qualifications Management System Implementation
+- **Complete Database Schema**: Added `qualifications` table with comprehensive NDT certification tracking
+- **Full CRUD API**: Implemented all API routes for qualifications management with role-based permissions
+- **Advanced Frontend Component**: Created complete qualifications management interface with:
+  - Statistics dashboard (active, expiring, expired, total qualifications)
+  - Form validation for certification data entry
+  - File upload system for certification documents
+  - Inline editing and deletion capabilities
+  - Filtering and search functionality
+- **Navigation Integration**: Added "Qualifiche" tab positioned between Reports and Procedures sections
+- **Role-Based Access**: Administrators and team leaders can manage all qualifications, operators see only their own
+
 ## Recent Changes (January 2025)
 
 ### Enhanced Administration Features
