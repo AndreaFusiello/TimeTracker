@@ -2,6 +2,15 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// DEBUG: Check variabili d'ambiente fondamentali
+['REPL_ID', 'REPLIT_DOMAINS', 'SESSION_SECRET', 'DATABASE_URL'].forEach(k => {
+  if (!process.env[k] || !process.env[k]!.trim()) {
+    console.error(`❌ Missing env var: ${k}`);
+  } else {
+    console.log(`✅ Found env var: ${k}`);
+  }
+});
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
