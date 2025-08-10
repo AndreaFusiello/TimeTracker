@@ -20,7 +20,7 @@ services:
       - key: ISSUER_URL
         value: https://replit.com/oidc
       - key: REPL_ID
-        value: COPY_FROM_REPLIT_ENV
+        value: 4773ff5a-41ca-4f96-8c8b-3f9ff4f18b87
 
 databases:
   - name: timetracker-db
