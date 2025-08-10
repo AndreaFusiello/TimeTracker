@@ -32,21 +32,16 @@ REPL_ID = [IL_TUO_CLIENT_ID_REPLIT]
 
 ## 🔑 COME OTTENERE IL REPL_ID
 
-### Opzione A: App già registrata
-1. Vai su **Replit.com → Account → Apps & Integrations**
-2. Trova la tua app TimeTracker
-3. Copia il **Client ID**
+**IMPORTANTE**: Se usi Replit Auth (OIDC), il `REPL_ID` è automatico!
 
-### Opzione B: Registra nuova app
-1. Vai su **Replit.com → Account → Developer → OAuth Apps**
-2. Clicca **"Create OAuth App"**
-3. Compila:
-   - **App Name**: `TimeTracker Pro`
-   - **Homepage URL**: `https://timetracker-pro.onrender.com`
-   - **Callback URL**: `https://timetracker-pro.onrender.com/api/callback`
-   - **Description**: `Work hours tracking application`
-4. Salva e copia il **Client ID** generato
-5. Inserisci questo valore in `REPL_ID`
+### Su Replit (Automatico)
+- Il `REPL_ID` è fornito automaticamente come variabile d'ambiente
+- Non serve registrazione OAuth separata
+
+### Su Render.com (Manuale)
+1. Controlla il valore su Replit: guarda nei Secrets o esegui `echo $REPL_ID`
+2. Copia questo valore esatto in Render.com come variabile `REPL_ID`
+3. Oppure usa un valore placeholder per test iniziale
 
 ## ⚠️ IMPORTANTE
 
