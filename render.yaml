@@ -3,8 +3,8 @@ services:
     name: timetracker-pro
     env: node
     plan: free
-    buildCommand: npm install && npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && mkdir -p dist/uploads && cp -r shared dist/
-    startCommand: NODE_ENV=production node dist/index.js
+    buildCommand: npm install && npm run build && mkdir -p dist/uploads && cp -r shared dist/
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -14,13 +14,13 @@ services:
           name: timetracker-db
           property: connectionString
       - key: SESSION_SECRET
-        generateValue: true
+        value: ed41a3c1265f4ac7256ef8525ff25c6d48001c59d21fd7ec851e9b9747a9dec1
       - key: REPLIT_DOMAINS
         value: timetracker-pro.onrender.com
       - key: ISSUER_URL
         value: https://replit.com/oidc
       - key: REPL_ID
-        value: your-repl-id-here
+        value: SET_YOUR_REPL_CLIENT_ID_HERE
 
 databases:
   - name: timetracker-db
