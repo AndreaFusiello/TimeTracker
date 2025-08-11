@@ -3,7 +3,7 @@ services:
     name: timetracker-pro
     env: node
     plan: free
-    buildCommand: npm install && npm run build && mkdir -p dist/uploads && cp -r shared dist/
+    buildCommand: npm install --include=dev && npm run build && mkdir -p dist/uploads && cp -r shared dist/
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
